@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: core-platform
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: mlops-platform
+  source:
+    repoURL: https://github.com/umeshchhabra/mlops-foundry.git
+    targetRevision: main
+    path: infra/platform/base
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mlops
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
