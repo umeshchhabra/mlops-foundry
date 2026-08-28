@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: mlops-platform
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: grafana
+      targetRevision: 10.0.0
+      helm:
+        valueFiles: ["$values/infra/platform/helm-values/grafana/values.yaml"]
+    - repoURL: https://github.com/umeshchhabra/mlops-foundry.git
+      targetRevision: main
+      ref: values
+  destination: { server: https://kubernetes.default.svc, namespace: mlops }
+  syncPolicy:
+    automated: { selfHeal: true }
+    syncOptions: [CreateNamespace=true]

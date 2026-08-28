@@ -1,0 +1,20 @@
+server:
+  service:
+    type: NodePort
+    nodePort: 30900
+  persistentVolume:
+    enabled: true
+    existingClaim: prometheus-pvc
+  additionalScrapeConfigs:
+    - job_name: mlflow
+      metrics_path: /metrics
+      static_configs:
+        - targets: [mlflow.mlops.svc.cluster.local:5000]
+    - job_name: minio
+      metrics_path: /minio/prometheus/metrics
+      static_configs:
+        - targets: [minio.mlops.svc.cluster.local:9000]
+alertmanager:
+  persistentVolume:
+    enabled: true
+    existingClaim: alertmanager-pvc

@@ -1,0 +1,19 @@
+service:
+  type: NodePort
+  nodePort: 30901
+persistence:
+  enabled: true
+  existingClaim: grafana-pvc
+admin:
+  existingSecret: platform-secrets
+  userKey: GRAFANA_ADMIN_USER
+  passwordKey: GRAFANA_ADMIN_PASSWORD
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-server.mlops.svc.cluster.local
+        isDefault: true
