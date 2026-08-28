@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata: { name: create-airflow-db, namespace: mlops }
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: create-db
+          image: postgres:15
+          env:
+            - name: PGPASSWORD
+              valueFrom: { secretKeyRef: { name: platform-secrets, key: POSTGRES_PASSWORD } }
+            - name: AIRFLOW_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: platform-secrets, key: AIRFLOW_DB_PASSWORD } }
+          command: [bash, -ec]
+          args:
+            - |
+              psql -h postgres -U mlflow -tc "SELECT 1 FROM pg_database WHERE datname = 'airflow'" | grep -q 1 || psql -h postgres -U mlflow -c "CREATE DATABASE airflow;"
+              psql -h postgres -U mlflow -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_catalog.pg_user WHERE usename = 'airflow') THEN CREATE USER airflow WITH ENCRYPTED PASSWORD '$AIRFLOW_DB_PASSWORD'; END IF; END \$\$;"
+              psql -h postgres -U mlflow -c "GRANT ALL PRIVILEGES ON DATABASE airflow TO airflow;"
