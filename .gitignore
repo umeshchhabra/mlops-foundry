@@ -1,0 +1,5 @@
+# Never commit local cluster credentials or rendered secrets.
+*.secret.yaml
+.env
+backups/
+*.tgz
