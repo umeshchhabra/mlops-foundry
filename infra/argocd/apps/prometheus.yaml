@@ -18,5 +18,5 @@ spec:
       ref: values
   destination: { server: https://kubernetes.default.svc, namespace: mlops }
   syncPolicy:
-    automated: { selfHeal: true }
+    automated: { prune: true, selfHeal: true }
     syncOptions: [CreateNamespace=true]
