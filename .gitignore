@@ -1,5 +1,32 @@
-# Never commit local cluster credentials or rendered secrets.
-*.secret.yaml
+# Never commit local credentials, rendered secrets, or backup data.
 .env
+.env.*
+!.env.example
+*.secret.yaml
+*.secrets.yaml
+secrets*.yaml
+secrets*.yml
+*.enc.yaml
+*.enc.yml
+
+# Local Kubernetes and Argo CD access material.
+kubeconfig
+kubeconfig.*
+*.kubeconfig
+argocd-token*
+
+# Private keys and certificates.
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+
+# Local data, backups, and packaged artifacts.
 backups/
+data/
+*.sql
+*.sql.gz
 *.tgz
+*.tar
+*.tar.gz
