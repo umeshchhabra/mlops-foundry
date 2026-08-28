@@ -28,3 +28,5 @@ alertmanager:
   persistentVolume:
     enabled: true
     existingClaim: alertmanager-pvc
+prometheus-node-exporter:
+  enabled: false
