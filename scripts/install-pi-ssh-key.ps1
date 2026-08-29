@@ -11,7 +11,7 @@ if (-not (Get-Command ssh-keygen.exe -ErrorAction SilentlyContinue)) {
     throw 'OpenSSH client tools are required.'
 }
 if (-not (Test-Path -LiteralPath $KeyPath)) {
-    ssh-keygen.exe -t ed25519 -a 64 -f $KeyPath -C 'mlops-foundry@raspberry-pi' -N '""'
+    ssh-keygen.exe -t ed25519 -a 64 -f $KeyPath -C 'mlops-foundry@raspberry-pi' -N ''
 }
 
 $publicKey = Get-Content -LiteralPath "$KeyPath.pub" -Raw
