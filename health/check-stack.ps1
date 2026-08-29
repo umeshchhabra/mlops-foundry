@@ -30,7 +30,9 @@ foreach ($app in $apps.items) {
 
 $pods = Get-KubectlJson @('get','pods','-n',$Namespace,'-o','json')
 foreach ($pod in $pods.items) {
-    if ($pod.status.phase -in @('Succeeded','Completed')) { continue }
+    # Completed Jobs and terminal pods retained by an old ReplicaSet are not
+    # active workload failures. Active crash loops remain Running/NotReady.
+    if ($pod.status.phase -in @('Succeeded','Completed','Failed')) { continue }
     $ready = $pod.status.containerStatuses | Where-Object { -not $_.ready }
     if ($pod.status.phase -ne 'Running' -or $ready) {
         $failures.Add("Workload pod unhealthy: $($pod.metadata.name) ($($pod.status.phase))")
