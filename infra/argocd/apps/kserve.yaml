@@ -7,7 +7,7 @@ metadata:
 spec:
   project: mlops-platform
   sources:
-    - repoURL: oci://ghcr.io/kserve/charts
+    - repoURL: ghcr.io/kserve/charts
       chart: kserve-resources
       targetRevision: v0.20.0
       helm: { valueFiles: ["$values/infra/platform/helm-values/kserve/values.yaml"] }

@@ -12,8 +12,8 @@ spec:
     - https://prometheus-community.github.io/helm-charts
     - https://grafana.github.io/helm-charts
     - https://jupyterhub.github.io/helm-chart/
-    - oci://quay.io/jetstack/charts
-    - oci://ghcr.io/kserve/charts
+    - quay.io/jetstack/charts
+    - ghcr.io/kserve/charts
   destinations:
     - namespace: mlops
       server: https://kubernetes.default.svc
