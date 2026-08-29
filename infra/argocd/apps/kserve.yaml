@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kserve
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "6" }
+spec:
+  project: mlops-platform
+  sources:
+    - repoURL: oci://ghcr.io/kserve/charts
+      chart: kserve-resources
+      targetRevision: v0.20.0
+      helm: { valueFiles: ["$values/infra/platform/helm-values/kserve/values.yaml"] }
+    - repoURL: https://github.com/umeshchhabra/mlops-foundry.git
+      targetRevision: main
+      ref: values
+  destination: { server: https://kubernetes.default.svc, namespace: kserve }
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true,ServerSideApply=true]

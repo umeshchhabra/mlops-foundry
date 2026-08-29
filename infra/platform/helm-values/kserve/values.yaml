@@ -1,0 +1,19 @@
+kserve:
+  createSharedResources: true
+  certManager: { enabled: true }
+  controller:
+    deploymentMode: Standard
+    # No ingress controller is part of this local stack yet. InferenceServices
+    # remain reachable through their generated ClusterIP service/port-forward.
+    gateway:
+      disableIngressCreation: true
+    resources:
+      requests: { cpu: 100m, memory: 300Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+  storage:
+    s3:
+      endpoint: http://minio.mlops.svc.cluster.local:9000
+      useHttps: "0"
+      region: us-east-1
+      verifySSL: "0"
+      useVirtualBucket: "0"
