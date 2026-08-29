@@ -1,6 +1,12 @@
 kserve:
-  createSharedResources: true
+  # The chart uses Helm's `default`, which considers false empty. Keep the
+  # global switch off and opt into the two resources required by KServe.
+  createSharedResources: false
+  inferenceServiceConfig: { enabled: true }
   certManager: { enabled: true }
+  # Optional extension point; not needed for built-in runtimes using MinIO.
+  # Disabling it avoids granting Argo CD an extra cluster-scoped permission.
+  storagecontainer: { enabled: false }
   controller:
     deploymentMode: Standard
     # No ingress controller is part of this local stack yet. InferenceServices

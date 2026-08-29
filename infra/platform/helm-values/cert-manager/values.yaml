@@ -1,3 +1,7 @@
 # KServe uses cert-manager for its admission-webhook certificates.
 crds: { enabled: true, keep: true }
+# Keep cert-manager's leader-election RBAC inside its own namespace.
+global:
+  leaderElection:
+    namespace: cert-manager
 replicaCount: 1
