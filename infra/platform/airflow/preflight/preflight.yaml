@@ -32,11 +32,12 @@ spec:
           image: minio/mc:RELEASE.2025-08-13T08-35-41Z
           securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] }, readOnlyRootFilesystem: true }
           env:
-            - name: MC_HOST_minio
-              value: http://$(MINIO_ROOT_USER):$(MINIO_ROOT_PASSWORD)@minio:9000
             - name: MINIO_ROOT_USER
               valueFrom: { secretKeyRef: { name: platform-secrets, key: MINIO_ROOT_USER } }
             - name: MINIO_ROOT_PASSWORD
               valueFrom: { secretKeyRef: { name: platform-secrets, key: MINIO_ROOT_PASSWORD } }
+            # Kubernetes expands only variables declared earlier in this list.
+            - name: MC_HOST_minio
+              value: http://$(MINIO_ROOT_USER):$(MINIO_ROOT_PASSWORD)@minio:9000
           command: [sh, -ec]
           args: ["mc mb --ignore-existing minio/airflow-logs"]
