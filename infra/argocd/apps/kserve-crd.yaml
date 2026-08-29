@@ -7,7 +7,7 @@ metadata:
 spec:
   project: mlops-platform
   source:
-    repoURL: oci://ghcr.io/kserve/charts
+    repoURL: ghcr.io/kserve/charts
     chart: kserve-crd
     targetRevision: v0.20.0
   destination: { server: https://kubernetes.default.svc, namespace: kserve }
