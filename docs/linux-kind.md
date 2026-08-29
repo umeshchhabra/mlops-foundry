@@ -13,7 +13,8 @@ MLOPS_DATA_DIR=/mnt/mlops-data ./scripts/bootstrap-kind-linux.sh
 ```
 
 The bootstrap automatically builds `images/mlflow/Dockerfile` on the host and
-loads the native image into Kind. Install Argo CD, configure the private-
+loads the native image into Kind. The official Airflow image is pulled by
+Kubernetes. Install Argo CD, configure the private-
 repository credential, and apply the root Application next. Use
 `pwsh ./health/check-stack.ps1` to validate the result.
 
