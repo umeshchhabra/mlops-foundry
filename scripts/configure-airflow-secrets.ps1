@@ -4,7 +4,10 @@ param([string]$Context = 'kind-mlops', [string]$Namespace = 'mlops')
 $ErrorActionPreference = 'Stop'
 function New-RandomSecret([int]$Bytes = 32) {
   $buffer = New-Object byte[] $Bytes
-  [System.Security.Cryptography.RandomNumberGenerator]::Fill($buffer)
+  # Use the instance API for Windows PowerShell/.NET Framework compatibility.
+  $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+  try { $rng.GetBytes($buffer) }
+  finally { $rng.Dispose() }
   [Convert]::ToBase64String($buffer).Replace('+', '-').Replace('/', '_')
 }
 $dbUriEncoded = kubectl --context $Context get secret platform-secrets -n $Namespace -o jsonpath='{.data.AIRFLOW_DB_URI}'
