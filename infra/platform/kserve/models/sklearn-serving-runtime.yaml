@@ -1,0 +1,29 @@
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: sklearn
+  namespace: models
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    serving.kserve.io/server-type: sklearnserver
+spec:
+  supportedModelFormats:
+    - name: sklearn
+      version: "1"
+      autoSelect: true
+      priority: 1
+  protocolVersions: [v1, v2]
+  containers:
+    - name: kserve-container
+      image: kserve/sklearnserver:v0.20.0
+      args:
+        - --model_name={{.Name}}
+        - --model_dir=/mnt/models
+        - --http_port=8080
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities: { drop: [ALL] }
+        runAsNonRoot: true
+      resources:
+        requests: { cpu: 100m, memory: 512Mi }
+        limits: { cpu: "1", memory: 1Gi }
