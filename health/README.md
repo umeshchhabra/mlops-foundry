@@ -7,4 +7,5 @@ pwsh ./health/check-stack.ps1
 ```
 
 It checks node readiness, Argo CD application state, workload pod readiness,
-and the MLflow, MinIO, Prometheus, and Grafana health endpoints.
+the KServe controller, and the MLflow, MinIO, Prometheus, and Grafana health
+endpoints.

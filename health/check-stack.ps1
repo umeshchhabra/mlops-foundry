@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$Namespace = 'mlops',
-    [string]$ArgoNamespace = 'argocd'
+    [string]$ArgoNamespace = 'argocd',
+    [string]$KServeNamespace = 'kserve'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,6 +37,14 @@ foreach ($pod in $pods.items) {
     $ready = $pod.status.containerStatuses | Where-Object { -not $_.ready }
     if ($pod.status.phase -ne 'Running' -or $ready) {
         $failures.Add("Workload pod unhealthy: $($pod.metadata.name) ($($pod.status.phase))")
+    }
+}
+
+$kservePods = Get-KubectlJson @('get','pods','-n',$KServeNamespace,'-o','json')
+foreach ($pod in $kservePods.items) {
+    $notReady = $pod.status.containerStatuses | Where-Object { -not $_.ready }
+    if ($pod.status.phase -ne 'Running' -or $notReady) {
+        $failures.Add("KServe pod unhealthy: $($pod.metadata.name) ($($pod.status.phase))")
     }
 }
 
