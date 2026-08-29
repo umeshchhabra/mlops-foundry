@@ -1,0 +1,17 @@
+# Apply only after the MinIO secret has been configured and an sklearn model
+# artifact has been uploaded to s3://models/sklearn-iris/model.joblib.
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: sklearn-iris
+  namespace: models
+spec:
+  predictor:
+    serviceAccountName: kserve-model
+    model:
+      modelFormat:
+        name: sklearn
+      storageUri: s3://models/sklearn-iris
+      resources:
+        requests: { cpu: 100m, memory: 512Mi }
+        limits: { cpu: "1", memory: 1Gi }
