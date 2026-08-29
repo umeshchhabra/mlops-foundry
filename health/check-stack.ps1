@@ -2,7 +2,8 @@
 param(
     [string]$Namespace = 'mlops',
     [string]$ArgoNamespace = 'argocd',
-    [string]$KServeNamespace = 'kserve'
+    [string]$KServeNamespace = 'kserve',
+    [string]$ModelNamespace = 'models'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -47,6 +48,10 @@ foreach ($pod in $kservePods.items) {
         $failures.Add("KServe pod unhealthy: $($pod.metadata.name) ($($pod.status.phase))")
     }
 }
+
+$modelService = Get-KubectlJson @('get','inferenceservice','sklearn-iris','-n',$ModelNamespace,'-o','json')
+$modelReady = $modelService.status.conditions | Where-Object { $_.type -eq 'Ready' -and $_.status -eq 'True' }
+if (-not $modelReady) { $failures.Add('KServe InferenceService is not Ready: models/sklearn-iris') }
 
 foreach ($endpoint in @(
     '/api/v1/namespaces/mlops/services/http:mlflow:5000/proxy/health',

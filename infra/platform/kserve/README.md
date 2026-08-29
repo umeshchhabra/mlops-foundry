@@ -17,17 +17,23 @@ The script reads credentials from the existing `platform-secrets` Kubernetes
 Secret and creates `kserve-minio-storage` only in the cluster; it never writes
 credentials to the repository or disk.
 
-An opt-in sklearn example is at
-`infra/platform/kserve/examples/sklearn-iris-inferenceservice.yaml`. Upload a
-compatible `model.joblib` to `s3://models/sklearn-iris/` first, then apply the
-example and wait for `Ready=True`:
+The default `kserve-models` application seeds a small Iris sklearn demo model
+into MinIO one time and deploys it as `models/sklearn-iris`. It is intended as
+a platform verification workload, not as a production model. After the
+bootstrap Job and service are ready, access it locally:
 
 ```powershell
-kubectl apply -f ./infra/platform/kserve/examples/sklearn-iris-inferenceservice.yaml
 kubectl -n models wait --for=condition=Ready inferenceservice/sklearn-iris --timeout=5m
 kubectl -n models port-forward service/sklearn-iris-predictor 8081:80
 ```
 
+Then send a KServe v2 prediction request to `http://localhost:8081/v2/models/sklearn-iris/infer`:
+
+```powershell
+$body = '{"inputs":[{"name":"predict","shape":[1,4],"datatype":"FP32","data":[[5.1,3.5,1.4,0.2]]}]}'
+Invoke-RestMethod http://localhost:8081/v2/models/sklearn-iris/infer -Method Post -ContentType 'application/json' -Body $body
+```
+
 Until an ingress/gateway is deliberately introduced, port-forward is the
-intended local access method. The example is not part of the Argo CD
-application, so an absent model artifact cannot make the platform unhealthy.
+intended local access method. The bootstrap Job is part of the Argo CD
+application and must complete before the model service is created.
