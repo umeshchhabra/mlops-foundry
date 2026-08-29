@@ -3,5 +3,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - service-account.yaml
+  - sklearn-serving-runtime.yaml
   - sklearn-iris-bootstrap.yaml
   - sklearn-iris-inferenceservice.yaml
