@@ -16,10 +16,23 @@ webserver: { enabled: false }
 createUserJob:
   enabled: true
   applyCustomEnv: true
+  # Helm post-install hooks deadlock under Argo CD. Create the account only
+  # after the migrated Airflow workloads are healthy.
+  useHelmHooks: false
+  jobAnnotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
   # The command below reads the real password from airflow-admin/password.
   defaultUser: { role: Admin, username: admin, email: admin@local.invalid, firstName: Platform, lastName: Admin, password: managed-by-secret }
   command: [bash, -ec]
   args: ['exec airflow users create --role Admin --username admin --email admin@local.invalid --firstname Platform --lastname Admin --password "$AIRFLOW_ADMIN_PASSWORD"']
+migrateDatabaseJob:
+  # Run migrations before workloads whose init containers wait for them.
+  useHelmHooks: false
+  jobAnnotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-1"
 apiServer:
   enabled: true
   replicas: 1
