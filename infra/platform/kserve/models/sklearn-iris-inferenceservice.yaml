@@ -11,6 +11,7 @@ spec:
     model:
       modelFormat:
         name: sklearn
+        version: "1"
       storageUri: s3://models/sklearn-iris
       resources:
         requests: { cpu: 100m, memory: 512Mi }
