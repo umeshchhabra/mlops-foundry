@@ -8,3 +8,6 @@ Kubernetes and are deliberately excluded from this repository.
 
 For a Linux or Raspberry Pi compatibility test, see
 [`docs/linux-kind.md`](docs/linux-kind.md).
+
+For the Airflow GitOps deployment and its local-only secret bootstrap, see
+[`docs/airflow.md`](docs/airflow.md).

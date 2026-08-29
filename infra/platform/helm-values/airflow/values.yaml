@@ -1,0 +1,60 @@
+# Airflow uses the existing PostgreSQL and MinIO services. The referenced
+# Kubernetes Secrets are created locally and are never committed to Git.
+airflowVersion: "3.2.2"
+executor: LocalExecutor
+images:
+  airflow: { repository: apache/airflow, tag: 3.2.2-python3.12, pullPolicy: IfNotPresent }
+data: { metadataSecretName: airflow-metadata }
+fernetKeySecretName: airflow-fernet-key
+apiSecretKeySecretName: airflow-api-secret
+jwtSecretName: airflow-jwt-secret
+postgresql: { enabled: false }
+redis: { enabled: false }
+statsd: { enabled: false }
+triggerer: { enabled: false }
+webserver: { enabled: false }
+createUserJob:
+  enabled: true
+  applyCustomEnv: true
+  # The command below reads the real password from airflow-admin/password.
+  defaultUser: { role: Admin, username: admin, email: admin@local.invalid, firstName: Platform, lastName: Admin, password: managed-by-secret }
+  command: [bash, -ec]
+  args: ['exec airflow users create --role Admin --username admin --email admin@local.invalid --firstname Platform --lastname Admin --password "$AIRFLOW_ADMIN_PASSWORD"']
+apiServer:
+  enabled: true
+  replicas: 1
+  service:
+    type: NodePort
+    ports: [{ name: api-server, port: 8080, targetPort: api-server, nodePort: 31080 }]
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: "1", memory: 1Gi }
+scheduler:
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: "1", memory: 1Gi }
+dagProcessor:
+  enabled: true
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: "1", memory: 1Gi }
+dags:
+  persistence: { enabled: true, existingClaim: airflow-pvc }
+  gitSync: { enabled: false }
+config:
+  logging:
+    remote_logging: "True"
+    remote_base_log_folder: s3://airflow-logs
+    remote_log_conn_id: aws_default
+env:
+  - { name: AWS_DEFAULT_REGION, value: us-east-1 }
+  - { name: AIRFLOW__LOGGING__REMOTE_LOGGING, value: "True" }
+  - { name: AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER, value: s3://airflow-logs }
+  - { name: AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID, value: aws_default }
+  - { name: AIRFLOW__LOGGING__REMOTE_LOGGING_S3_ENDPOINT_URL, value: http://minio:9000 }
+secret:
+  - { envName: AWS_ACCESS_KEY_ID, secretName: platform-secrets, secretKey: AWS_ACCESS_KEY_ID }
+  - { envName: AWS_SECRET_ACCESS_KEY, secretName: platform-secrets, secretKey: AWS_SECRET_ACCESS_KEY }
+  - { envName: AIRFLOW_ADMIN_PASSWORD, secretName: airflow-admin, secretKey: password }
