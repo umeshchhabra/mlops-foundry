@@ -12,9 +12,16 @@ cd mlops-foundry
 MLOPS_DATA_DIR=/mnt/mlops-data ./scripts/bootstrap-kind-linux.sh
 ```
 
-Then build the MLflow image for the host architecture, load it into Kind, install
-Argo CD, configure the private-repository credential, and apply the root
-Application. Use `pwsh ./health/check-stack.ps1` to validate the result.
+The bootstrap automatically builds `images/mlflow/Dockerfile` on the host and
+loads the native image into Kind. Install Argo CD, configure the private-
+repository credential, and apply the root Application next. Use
+`pwsh ./health/check-stack.ps1` to validate the result.
+
+Before testing, confirm the MLflow base image supports the Pi's CPU architecture:
+
+```bash
+docker buildx imagetools inspect ghcr.io/mlflow/mlflow:v3.4.0
+```
 
 The `kind-linux.yaml.tpl` file is rendered at runtime; do not commit a generated
 file containing a local data path.
