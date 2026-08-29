@@ -4,6 +4,8 @@ service:
 persistence:
   enabled: true
   existingClaim: grafana-pvc
+initChownData:
+  enabled: false
 admin:
   existingSecret: platform-secrets
   userKey: GRAFANA_ADMIN_USER
