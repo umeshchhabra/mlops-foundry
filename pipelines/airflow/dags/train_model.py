@@ -19,7 +19,9 @@ def train_and_log() -> None:
     features, labels = load_iris(return_X_y=True)
     model = LogisticRegression(max_iter=1000).fit(features, labels)
     accuracy = float(model.score(features, labels))
-    base = os.environ["MLFLOW_TRACKING_URI"].rstrip("/")
+    base = os.environ.get(
+        "MLFLOW_TRACKING_URI", "http://mlflow.mlops.svc.cluster.local:5000"
+    ).rstrip("/")
 
     def post(path: str, payload: dict) -> dict:
         request = Request(
@@ -68,8 +70,4 @@ with DAG(
     train = PythonOperator(
         task_id="train_and_log",
         python_callable=train_and_log,
-        env_vars={
-            "MLFLOW_TRACKING_URI": "http://mlflow.mlops.svc.cluster.local:5000",
-            "MLFLOW_S3_ENDPOINT_URL": "http://minio.mlops.svc.cluster.local:9000",
-        },
     )
