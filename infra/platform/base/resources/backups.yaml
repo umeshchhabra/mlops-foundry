@@ -9,6 +9,27 @@ spec:
   resources: { requests: { storage: 20Gi } }
 ---
 apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backup-storage-initialize
+  namespace: mlops
+  annotations: { argocd.argoproj.io/sync-wave: "-1" }
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      securityContext: { seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: initialize
+          image: alpine:3.20
+          command: [/bin/sh, -ec]
+          args: [mkdir -p /backup/postgres /backup/minio]
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+          resources: { requests: { cpu: 10m, memory: 16Mi }, limits: { cpu: 50m, memory: 64Mi } }
+          volumeMounts: [{ name: backups, mountPath: /backup }]
+      volumes: [{ name: backups, persistentVolumeClaim: { claimName: platform-backups-pvc } }]
+---
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: postgres-backup

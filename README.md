@@ -72,17 +72,20 @@ The script creates the Kind cluster, persistent-volume claims, local runtime sec
 
 ```powershell
 kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply --server-side --force-conflicts -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl -n argocd wait --for=condition=Available deployment/argocd-server --timeout=5m
+pwsh ./scripts/configure-argocd-local.ps1
 pwsh ./scripts/configure-argocd-repo.ps1
 pwsh ./scripts/configure-airflow-secrets.ps1
+pwsh ./scripts/configure-kserve-storage.ps1
 kubectl apply -f infra/bootstrap/bootstrap-project.yaml
 kubectl apply -f infra/bootstrap/root-application.yaml
-pwsh ./scripts/configure-kserve-storage.ps1
+pwsh ./health/wait-for-stack.ps1
+pwsh ./scripts/sync-airflow-dags.ps1
 pwsh ./health/check-stack.ps1
 ```
 
-Wait a few minutes after applying the root Application; Argo CD installs and reconciles the chart-backed services in dependency order. If an address does not open, run the health check first and then inspect the matching Argo CD Application.
+The wait helper allows up to 15 minutes for Argo CD to install and reconcile the chart-backed services. The DAG sync helper then copies the repository DAGs into Airflow's persistent volume without giving a cluster workload access to your private repository. If an address does not open, run the health check and inspect the matching Argo CD Application.
 
 ## First setup on Linux
 
@@ -98,13 +101,16 @@ Then install and bootstrap Argo CD exactly as above. PowerShell commands work on
 
 ```bash
 kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply --server-side --force-conflicts -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl -n argocd wait --for=condition=Available deployment/argocd-server --timeout=5m
+pwsh ./scripts/configure-argocd-local.ps1
 pwsh ./scripts/configure-argocd-repo.ps1
 pwsh ./scripts/configure-airflow-secrets.ps1
+pwsh ./scripts/configure-kserve-storage.ps1
 kubectl apply -f infra/bootstrap/bootstrap-project.yaml
 kubectl apply -f infra/bootstrap/root-application.yaml
-pwsh ./scripts/configure-kserve-storage.ps1
+pwsh ./health/wait-for-stack.ps1
+pwsh ./scripts/sync-airflow-dags.ps1
 pwsh ./health/check-stack.ps1
 ```
 

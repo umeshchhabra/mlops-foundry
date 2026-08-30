@@ -27,12 +27,11 @@ createUserJob:
   command: [bash, -ec]
   args: ['exec airflow users create --role Admin --username admin --email admin@local.invalid --firstname Platform --lastname Admin --password "$AIRFLOW_ADMIN_PASSWORD"']
 migrateDatabaseJob:
-  # Run migrations before workloads whose init containers wait for them.
+  # Keep this as a normal chart resource so its ServiceAccount and ConfigMap
+  # are created before Kubernetes starts the migration Job.
   useHelmHooks: false
   jobAnnotations:
-    argocd.argoproj.io/hook: PreSync
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
-    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-wave: "1"
 apiServer:
   enabled: true
   replicas: 1

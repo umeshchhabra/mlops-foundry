@@ -19,8 +19,8 @@ spec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 10Gi } }
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
-metadata: { name: alertmanager-pvc, namespace: mlops }
-spec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 2Gi } } }
+metadata: { name: airflow-pvc, namespace: mlops }
+spec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 5Gi } } }
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
