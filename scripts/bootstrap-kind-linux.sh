@@ -5,7 +5,7 @@ CLUSTER_NAME="${CLUSTER_NAME:-mlops}"
 MLOPS_DATA_DIR="${MLOPS_DATA_DIR:-/opt/mlops-data}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-for command in docker kind kubectl helm openssl; do
+for command in docker kind kubectl helm openssl pwsh; do
   command -v "$command" >/dev/null || { echo "Missing: $command"; exit 1; }
 done
 case "$(uname -m)" in
@@ -20,6 +20,7 @@ trap 'rm -f "$config"' EXIT
 sed "s|__MLOPS_DATA_DIR__|$MLOPS_DATA_DIR|g" "$ROOT/infra/bootstrap/kind/kind-linux.yaml.tpl" > "$config"
 kind create cluster --name "$CLUSTER_NAME" --config "$config"
 kubectl apply -f "$ROOT/infra/platform/overlays/kind-linux/storage.yaml"
+pwsh "$ROOT/scripts/configure-monitoring-network.ps1" -Context "kind-$CLUSTER_NAME"
 
 # The core manifests reference this local image. Building on the target host
 # selects its native CPU architecture, then Kind distributes it to every node.
