@@ -78,6 +78,7 @@ foreach ($check in @(
     @{ Query = 'up{service="prometheus-kube-state-metrics"} == 1'; Minimum = 1; Name = 'kube-state-metrics scrape' },
     @{ Query = 'count(count by (node) (kube_node_info))'; Minimum = @($nodes.items).Count; Name = 'Kubernetes node metrics' },
     @{ Query = 'count(up{job="kubernetes-apiservers"} == 1)'; Minimum = 1; Name = 'API server scrape' },
+    @{ Query = 'up{job="kserve-controller"} == 1'; Minimum = 1; Name = 'KServe controller scrape' },
     @{ Query = 'count(up{job="kubernetes-nodes"} == 1)'; Minimum = @($nodes.items).Count; Name = 'Kubelet scrapes' },
     @{ Query = 'count(up{job="kubernetes-nodes-cadvisor"} == 1)'; Minimum = @($nodes.items).Count; Name = 'cAdvisor scrapes' }
 )) {

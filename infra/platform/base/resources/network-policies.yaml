@@ -65,3 +65,16 @@ spec:
         - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } }
           podSelector: { matchLabels: { k8s-app: kube-dns } }
       ports: [{ protocol: TCP, port: 9153 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: prometheus-allow-kserve-metrics, namespace: mlops }
+spec:
+  podSelector:
+    matchLabels: { app.kubernetes.io/name: prometheus, app.kubernetes.io/component: server }
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kserve } }
+          podSelector: { matchLabels: { control-plane: kserve-controller-manager } }
+      ports: [{ protocol: TCP, port: 8443 }]
