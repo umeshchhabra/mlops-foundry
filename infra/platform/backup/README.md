@@ -27,3 +27,6 @@ Restore PostgreSQL by piping a selected `.sql.gz` file to `psql` with the
 `platform-secrets` database credentials. Restore MinIO by copying the selected
 bucket directory back with `mc mirror`; test restores on an isolated cluster
 before replacing live data.
+
+The included `restore-test.ps1` performs a safe dry-run path check by default.
+Use `-Apply` only for a deliberate restore into the local PostgreSQL service.
