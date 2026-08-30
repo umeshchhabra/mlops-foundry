@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: platform-backups-pvc
+  namespace: mlops
+  labels: { app.kubernetes.io/part-of: mlops-foundry, app.kubernetes.io/component: backup }
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 20Gi } }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: mlops
+spec:
+  schedule: "17 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext: { seccompProfile: { type: RuntimeDefault } }
+          containers:
+            - name: pg-dump
+              image: postgres:15-alpine
+              env:
+                - name: PGHOST
+                  value: postgres
+                - name: PGUSER
+                  valueFrom: { secretKeyRef: { name: platform-secrets, key: POSTGRES_USER } }
+                - name: PGPASSWORD
+                  valueFrom: { secretKeyRef: { name: platform-secrets, key: POSTGRES_PASSWORD } }
+              command: [/bin/sh, -ec]
+              securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] }, runAsNonRoot: true }
+              args:
+                - |
+                  stamp=$(date -u +%Y%m%dT%H%M%SZ)
+                  mkdir -p /backup/postgres
+                  pg_dumpall | gzip > "/backup/postgres/postgres-${stamp}.sql.gz"
+                  find /backup/postgres -type f -mtime +14 -delete
+              volumeMounts: [{ name: backups, mountPath: /backup }]
+              resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 500m, memory: 512Mi } }
+          volumes: [{ name: backups, persistentVolumeClaim: { claimName: platform-backups-pvc } }]
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: minio-backup
+  namespace: mlops
+spec:
+  schedule: "47 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext: { seccompProfile: { type: RuntimeDefault } }
+          containers:
+            - name: mc-mirror
+              image: quay.io/minio/mc:latest
+              env:
+                - name: MINIO_ROOT_USER
+                  valueFrom: { secretKeyRef: { name: platform-secrets, key: MINIO_ROOT_USER } }
+                - name: MINIO_ROOT_PASSWORD
+                  valueFrom: { secretKeyRef: { name: platform-secrets, key: MINIO_ROOT_PASSWORD } }
+              command: [/bin/sh, -ec]
+              securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] }, runAsNonRoot: true }
+              args:
+                - |
+                  stamp=$(date -u +%Y%m%dT%H%M%SZ)
+                  mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+                  mkdir -p "/backup/minio/${stamp}"
+                  mc mirror --overwrite local "/backup/minio/${stamp}"
+                  find /backup/minio -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +
+              volumeMounts: [{ name: backups, mountPath: /backup }]
+              resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 500m, memory: 512Mi } }
+          volumes: [{ name: backups, persistentVolumeClaim: { claimName: platform-backups-pvc } }]
