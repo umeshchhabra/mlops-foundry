@@ -12,7 +12,7 @@ spec:
       chart: prometheus
       targetRevision: 27.39.0
       helm:
-        valueFiles: ["$values/infra/platform/helm-values/prometheus/values.yaml"]
+        valueFiles: ["$values/infra/platform/helm-values/prometheus/values.yaml", "$values/infra/platform/helm-values/prometheus/scrapes.yaml"]
     - repoURL: https://github.com/umeshchhabra/mlops-foundry.git
       targetRevision: main
       ref: values
