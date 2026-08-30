@@ -8,7 +8,9 @@ $ErrorActionPreference = 'Continue'
 $check = Join-Path $PSScriptRoot 'check-stack.ps1'
 $deadline = (Get-Date).AddMinutes($TimeoutMinutes)
 do {
-  & $check *> $null
+  # Run the check in a child process because check-stack.ps1 intentionally
+  # calls `exit 1` when unhealthy; invoking it in-process would end this waiter.
+  & pwsh -NoProfile -File $check *> $null
   if ($LASTEXITCODE -eq 0) {
     Write-Host 'Stack is healthy.'
     exit 0
