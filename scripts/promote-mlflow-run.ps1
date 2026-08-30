@@ -1,13 +1,18 @@
 param(
   [Parameter(Mandatory)] [string] $RunId,
-  [Parameter(Mandatory)] [string] $ModelUri,
   [string] $TrackingUri = 'http://localhost:5000',
+  [string] $ModelUri,
   [string] $OutputPath = 'infra/platform/kserve/models/promoted-inferenceservice.yaml'
 )
 
 $run = Invoke-RestMethod -Uri "$TrackingUri/api/2.0/mlflow/runs/get?run_id=$RunId"
 if ($run.run.info.status -ne 'FINISHED') {
   throw "Run '$RunId' is not FINISHED (status: $($run.run.info.status))."
+}
+if (-not $ModelUri) {
+  $artifactUri = $run.run.info.artifact_uri
+  if (-not $artifactUri) { throw "Run '$RunId' has no artifact URI." }
+  $ModelUri = "$artifactUri/model"
 }
 
 $manifest = @"
@@ -24,6 +29,9 @@ spec:
         name: sklearn
         version: "1"
       storageUri: $ModelUri
+      resources:
+        requests: { cpu: 100m, memory: 256Mi }
+        limits: { cpu: 500m, memory: 512Mi }
 "@
 
 $parent = Split-Path -Parent $OutputPath
