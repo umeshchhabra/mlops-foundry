@@ -31,7 +31,8 @@ migrateDatabaseJob:
   # are created before Kubernetes starts the migration Job.
   useHelmHooks: false
   jobAnnotations:
-    argocd.argoproj.io/sync-wave: "1"
+    # The workloads wait for this migration, so it must share their wave.
+    argocd.argoproj.io/sync-wave: "0"
 apiServer:
   enabled: true
   replicas: 1
