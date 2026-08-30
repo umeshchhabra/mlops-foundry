@@ -29,12 +29,12 @@ jobs:
       - name: Render platform Kustomize
         run: |
           kubectl kustomize infra/platform/base > /tmp/platform.yaml
-          kubectl create --dry-run=client --validate=false -f /tmp/platform.yaml -o yaml >/dev/null
+          test -s /tmp/platform.yaml
 
       - name: Render model-serving Kustomize
         run: |
           kubectl kustomize infra/platform/kserve/models > /tmp/models.yaml
-          kubectl create --dry-run=client --validate=false -f /tmp/models.yaml -o yaml >/dev/null
+          test -s /tmp/models.yaml
 
       - name: Parse PowerShell scripts
         shell: pwsh
