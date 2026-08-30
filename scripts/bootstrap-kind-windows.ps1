@@ -37,6 +37,7 @@ nodes:
 
   kind create cluster --name $ClusterName --config $config
   kubectl apply -f (Join-Path $root 'infra/platform/overlays/kind-linux/storage.yaml')
+  & (Join-Path $PSScriptRoot 'configure-monitoring-network.ps1') -Context "kind-$ClusterName"
   docker build --tag mlflow:3.4.0-psycopg2 --file (Join-Path $root 'images/mlflow/Dockerfile') (Join-Path $root 'images/mlflow')
   kind load docker-image mlflow:3.4.0-psycopg2 --name $ClusterName
   docker build --tag kserve-bootstrap:1.0.0 --file (Join-Path $root 'images/kserve-bootstrap/Dockerfile') (Join-Path $root 'images/kserve-bootstrap')

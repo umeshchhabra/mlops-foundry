@@ -40,3 +40,28 @@ spec:
   policyTypes: [Ingress]
   ingress:
     - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: models } } }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: prometheus-allow-cert-manager-metrics, namespace: mlops }
+spec:
+  podSelector:
+    matchLabels: { app.kubernetes.io/name: prometheus, app.kubernetes.io/component: server }
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: cert-manager } }
+      ports: [{ protocol: TCP, port: 9402 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: prometheus-allow-coredns-metrics, namespace: mlops }
+spec:
+  podSelector:
+    matchLabels: { app.kubernetes.io/name: prometheus, app.kubernetes.io/component: server }
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } }
+          podSelector: { matchLabels: { k8s-app: kube-dns } }
+      ports: [{ protocol: TCP, port: 9153 }]

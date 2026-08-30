@@ -72,6 +72,28 @@ foreach ($endpoint in @(
     if ($LASTEXITCODE -ne 0) { $failures.Add("Endpoint failed: $endpoint") }
 }
 
+# A ready Prometheus UI can still have broken Kubernetes discovery. Require
+# both a successful exporter scrape and node metrics for every current node.
+foreach ($check in @(
+    @{ Query = 'up{service="prometheus-kube-state-metrics"} == 1'; Minimum = 1; Name = 'kube-state-metrics scrape' },
+    @{ Query = 'count(count by (node) (kube_node_info))'; Minimum = @($nodes.items).Count; Name = 'Kubernetes node metrics' },
+    @{ Query = 'count(up{job="kubernetes-apiservers"} == 1)'; Minimum = 1; Name = 'API server scrape' },
+    @{ Query = 'count(up{job="kubernetes-nodes"} == 1)'; Minimum = @($nodes.items).Count; Name = 'Kubelet scrapes' },
+    @{ Query = 'count(up{job="kubernetes-nodes-cadvisor"} == 1)'; Minimum = @($nodes.items).Count; Name = 'cAdvisor scrapes' }
+)) {
+    try {
+        $query = [Uri]::EscapeDataString($check.Query)
+        $raw = & kubectl --request-timeout=15s get --raw "/api/v1/namespaces/$Namespace/services/http:prometheus-server:80/proxy/api/v1/query?query=$query"
+        if ($LASTEXITCODE -ne 0) { throw 'Prometheus query failed.' }
+        $result = $raw | ConvertFrom-Json
+        if ($result.status -ne 'success' -or -not @($result.data.result).Count) { throw 'No metric samples returned.' }
+        if ([double]$result.data.result[0].value[1] -lt $check.Minimum) {
+            throw "Expected a value of at least $($check.Minimum)."
+        }
+    }
+    catch { $failures.Add("Monitoring check failed: $($check.Name): $($_.Exception.Message)") }
+}
+
 if ($failures.Count) {
     $failures | ForEach-Object { Write-Error $_ }
     exit 1
