@@ -9,6 +9,14 @@ if (-not $Apply) {
   exit 0
 }
 
-Get-Content -Raw -Path $PostgresBackup |
-  kubectl -n mlops exec -i deploy/postgres -- psql -U mlflow
+if ($PostgresBackup -match '\.gz$') {
+  if (-not (Get-Command gzip -ErrorAction SilentlyContinue)) {
+    throw 'The -Apply path for .gz backups requires gzip on the client.'
+  }
+  & gzip -dc -- $PostgresBackup |
+    kubectl -n mlops exec -i deploy/postgres -- psql -U mlflow
+} else {
+  Get-Content -Raw -Path $PostgresBackup |
+    kubectl -n mlops exec -i deploy/postgres -- psql -U mlflow
+}
 Write-Output 'Restore stream completed. Verify application tables before using the restored data.'
