@@ -1,12 +1,14 @@
 # Platform backups
 
 The `core-platform` Argo CD application creates `platform-backups-pvc` and
-two daily CronJobs in `mlops`:
+two daily backup CronJobs and one retention CronJob in `mlops`:
 
 - `postgres-backup` writes compressed `pg_dumpall` files under
   `/backup/postgres`.
 - `minio-backup` mirrors every MinIO bucket under timestamped directories in
   `/backup/minio`.
+- `backup-retention` removes files and MinIO backup directories older than 14
+  days.
 
 Both jobs retain 14 days of backups and read credentials from
 `platform-secrets`; no credentials or backup contents are stored in Git.
