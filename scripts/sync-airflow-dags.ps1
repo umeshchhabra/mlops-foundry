@@ -53,4 +53,8 @@ finally {
   kubectl --context $Context delete pod $podName -n $Namespace --ignore-not-found --wait=false | Out-Null
 }
 
+kubectl --context $Context -n $Namespace rollout restart deployment/airflow-dag-processor | Out-Null
+kubectl --context $Context -n $Namespace rollout status deployment/airflow-dag-processor --timeout=3m | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'Airflow DAG processor did not restart successfully.' }
+
 Write-Host 'Airflow DAGs copied to airflow-pvc.'

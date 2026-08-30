@@ -13,7 +13,8 @@ kind: Job
 metadata:
   name: backup-storage-initialize
   namespace: mlops
-  annotations: { argocd.argoproj.io/sync-wave: "-1" }
+  # The PVC is a normal wave-0 resource, so initialize it after creation.
+  annotations: { argocd.argoproj.io/sync-wave: "1" }
 spec:
   template:
     spec:
