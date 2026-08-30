@@ -35,7 +35,7 @@ spec:
                 - name: PGPASSWORD
                   valueFrom: { secretKeyRef: { name: platform-secrets, key: POSTGRES_PASSWORD } }
               command: [/bin/sh, -ec]
-              securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] }, runAsNonRoot: true }
+              securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
               args:
                 - |
                   stamp=$(date -u +%Y%m%dT%H%M%SZ)
@@ -71,7 +71,7 @@ spec:
                 - name: MINIO_ROOT_PASSWORD
                   valueFrom: { secretKeyRef: { name: platform-secrets, key: MINIO_ROOT_PASSWORD } }
               command: [/bin/sh, -ec]
-              securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] }, runAsNonRoot: true }
+              securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
               args:
                 - |
                   stamp=$(date -u +%Y%m%dT%H%M%SZ)
