@@ -25,9 +25,13 @@ kubectl apply -f "$ROOT/infra/platform/overlays/kind-linux/storage.yaml"
 # selects its native CPU architecture, then Kind distributes it to every node.
 docker build --tag mlflow:3.4.0-psycopg2 --file "$ROOT/images/mlflow/Dockerfile" "$ROOT/images/mlflow"
 kind load docker-image mlflow:3.4.0-psycopg2 --name "$CLUSTER_NAME"
+docker build --tag kserve-bootstrap:1.0.0 --file "$ROOT/images/kserve-bootstrap/Dockerfile" "$ROOT/images/kserve-bootstrap"
+kind load docker-image kserve-bootstrap:1.0.0 --name "$CLUSTER_NAME"
 
 random() {
-  openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | head -c 32
+  # Hex output is already shell-safe and avoids SIGPIPE failures under
+  # `set -o pipefail` that can occur with a tr/head pipeline.
+  openssl rand -hex 16
 }
 postgres_password="$(random)"; airflow_password="$(random)"; minio_password="$(random)"
 kubectl create secret generic platform-secrets -n mlops \
@@ -38,4 +42,4 @@ kubectl create secret generic platform-secrets -n mlops \
   --from-literal=MINIO_ROOT_USER=mlops-admin --from-literal=MINIO_ROOT_PASSWORD="$minio_password" \
   --from-literal=AWS_ACCESS_KEY_ID=mlops-admin --from-literal=AWS_SECRET_ACCESS_KEY="$minio_password" \
   --from-literal=GRAFANA_ADMIN_USER=admin --from-literal=GRAFANA_ADMIN_PASSWORD="$(random)"
-echo 'Cluster, storage claims, native MLflow image, and runtime secrets created. Configure Argo CD next.'
+echo 'Cluster, storage claims, local images, and runtime secrets created. Configure Argo CD next.'

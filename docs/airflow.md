@@ -20,7 +20,15 @@ the working tree.
 
 Argo CD then runs an idempotent pre-sync Job that creates the `airflow` database
 and the `airflow-logs` bucket. The UI is exposed through the existing Kind host
-mapping at `http://localhost:8090` (`NodePort` 31080). DAG deployment is
-intentionally separate from platform GitOps: copy or synchronize DAG files to
-the `airflow-pvc` claim. Enable `dags.gitSync` only after choosing a dedicated,
-reviewed DAG repository and its Kubernetes credential.
+mapping at `http://localhost:8090` (`NodePort` 31080).
+
+DAG files are copied from the local clone into `airflow-pvc` after deployment:
+
+```powershell
+pwsh ./scripts/sync-airflow-dags.ps1
+```
+
+This keeps the private-repository token out of Airflow and works identically on
+Windows and Linux. Run the helper again after changing a DAG. Git sync remains
+disabled deliberately; enable it only for a dedicated DAG repository with a
+reviewed Kubernetes credential and network policy.

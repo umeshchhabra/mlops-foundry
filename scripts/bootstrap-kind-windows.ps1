@@ -39,6 +39,8 @@ nodes:
   kubectl apply -f (Join-Path $root 'infra/platform/overlays/kind-linux/storage.yaml')
   docker build --tag mlflow:3.4.0-psycopg2 --file (Join-Path $root 'images/mlflow/Dockerfile') (Join-Path $root 'images/mlflow')
   kind load docker-image mlflow:3.4.0-psycopg2 --name $ClusterName
+  docker build --tag kserve-bootstrap:1.0.0 --file (Join-Path $root 'images/kserve-bootstrap/Dockerfile') (Join-Path $root 'images/kserve-bootstrap')
+  kind load docker-image kserve-bootstrap:1.0.0 --name $ClusterName
 
   function New-RandomSecret {
     $bytes = New-Object byte[] 32
@@ -57,7 +59,7 @@ nodes:
     "--from-literal=AWS_ACCESS_KEY_ID=mlops-admin" "--from-literal=AWS_SECRET_ACCESS_KEY=$minioPassword" `
     "--from-literal=GRAFANA_ADMIN_USER=admin" "--from-literal=GRAFANA_ADMIN_PASSWORD=$grafanaPassword"
   if ($LASTEXITCODE -ne 0) { throw 'Failed to create platform-secrets.' }
-  Write-Host 'Cluster, storage, native MLflow image, and runtime-only secrets are ready. Configure Argo CD next.'
+  Write-Host 'Cluster, storage, local images, and runtime-only secrets are ready. Configure Argo CD next.'
 }
 finally {
   Remove-Item -LiteralPath $config -Force -ErrorAction SilentlyContinue

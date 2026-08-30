@@ -17,6 +17,10 @@ function Get-SecretValue([string]$Key) {
 $accessKey = Get-SecretValue 'AWS_ACCESS_KEY_ID'
 $secretKey = Get-SecretValue 'AWS_SECRET_ACCESS_KEY'
 
+kubectl --context $Context create namespace $ModelNamespace --dry-run=client -o yaml |
+  kubectl --context $Context apply -f -
+if ($LASTEXITCODE -ne 0) { throw "Failed to ensure namespace '$ModelNamespace'." }
+
 kubectl --context $Context -n $ModelNamespace create secret generic $SecretName `
   "--from-literal=AWS_ACCESS_KEY_ID=$accessKey" `
   "--from-literal=AWS_SECRET_ACCESS_KEY=$secretKey" `
