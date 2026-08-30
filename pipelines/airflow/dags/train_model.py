@@ -58,15 +58,20 @@ def train_and_log() -> None:
     endpoint = os.environ.get(
         "MLFLOW_S3_ENDPOINT_URL", "http://minio.mlops.svc.cluster.local:9000"
     )
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=endpoint,
+        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+        region_name="us-east-1",
+    )
+    try:
+        s3.head_bucket(Bucket=bucket)
+    except Exception:
+        s3.create_bucket(Bucket=bucket)
     with tempfile.NamedTemporaryFile(suffix=".joblib") as artifact:
         joblib.dump(model, artifact.name)
-        boto3.client(
-            "s3",
-            endpoint_url=endpoint,
-            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-            region_name="us-east-1",
-        ).upload_file(
+        s3.upload_file(
             artifact.name, bucket, f"{experiment_id}/{run_id}/artifacts/model/model.joblib"
         )
     artifact_uri = f"s3://{bucket}/{experiment_id}/{run_id}/artifacts/model"
