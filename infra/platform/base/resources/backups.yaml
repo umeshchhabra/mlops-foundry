@@ -70,14 +70,15 @@ spec:
                   valueFrom: { secretKeyRef: { name: platform-secrets, key: MINIO_ROOT_USER } }
                 - name: MINIO_ROOT_PASSWORD
                   valueFrom: { secretKeyRef: { name: platform-secrets, key: MINIO_ROOT_PASSWORD } }
+                - { name: MC_CONFIG_DIR, value: /tmp/mc }
               command: [/bin/sh, -ec]
               securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
               args:
                 - |
                   stamp=$(date -u +%Y%m%dT%H%M%SZ)
-                  mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+                  mc --config-dir "$MC_CONFIG_DIR" alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
                   mkdir -p "/backup/minio/${stamp}"
-                  mc mirror --overwrite local "/backup/minio/${stamp}"
+                  mc --config-dir "$MC_CONFIG_DIR" mirror --overwrite local "/backup/minio/${stamp}"
                   find /backup/minio -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +
               volumeMounts: [{ name: backups, mountPath: /backup }]
               resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 500m, memory: 512Mi } }
