@@ -34,12 +34,12 @@ def train_and_log() -> None:
             return json.loads(response.read())
 
     try:
-        experiment_id = post("experiments/create", {"name": "home-mlops-training"})[
+        experiment_id = post("experiments/create", {"name": "mlops-platform"})[
             "experiment_id"
         ]
     except Exception:
         request = Request(
-            f"{base}/api/2.0/mlflow/experiments/get-by-name?experiment_name=home-mlops-training"
+            f"{base}/api/2.0/mlflow/experiments/get-by-name?experiment_name=mlops-platform"
         )
         with urlopen(request, timeout=30) as response:
             experiment_id = json.loads(response.read())["experiment"]["experiment_id"]
