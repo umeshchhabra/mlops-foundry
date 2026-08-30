@@ -79,7 +79,35 @@ spec:
                   mc --config-dir "$MC_CONFIG_DIR" alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
                   mkdir -p "/backup/minio/${stamp}"
                   mc --config-dir "$MC_CONFIG_DIR" mirror --overwrite local "/backup/minio/${stamp}"
-                  find /backup/minio -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +
               volumeMounts: [{ name: backups, mountPath: /backup }]
               resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 500m, memory: 512Mi } }
+          volumes: [{ name: backups, persistentVolumeClaim: { claimName: platform-backups-pvc } }]
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-retention
+  namespace: mlops
+spec:
+  schedule: "17 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext: { seccompProfile: { type: RuntimeDefault } }
+          containers:
+            - name: cleanup
+              image: alpine:3.20
+              command: [/bin/sh, -ec]
+              securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+              args:
+                - |
+                  find /backup/postgres -type f -mtime +14 -delete
+                  find /backup/minio -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +
+              volumeMounts: [{ name: backups, mountPath: /backup }]
+              resources: { requests: { cpu: 10m, memory: 32Mi }, limits: { cpu: 100m, memory: 128Mi } }
           volumes: [{ name: backups, persistentVolumeClaim: { claimName: platform-backups-pvc } }]
