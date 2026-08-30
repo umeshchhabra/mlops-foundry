@@ -10,6 +10,8 @@ from airflow.providers.standard.operators.python import PythonOperator
 def train_and_log() -> None:
     import json
     import time
+    import csv
+    from pathlib import Path
     from urllib.request import Request, urlopen
     from sklearn.datasets import load_iris
     from sklearn.linear_model import LogisticRegression
@@ -17,7 +19,19 @@ def train_and_log() -> None:
     import joblib
     import tempfile
 
-    features, labels = load_iris(return_X_y=True)
+    data_path = Path(os.environ.get("DVC_TRAINING_DATA", "/opt/airflow/dags/data/training.csv"))
+    if data_path.exists():
+        with data_path.open(newline="") as source:
+            rows = list(csv.DictReader(source))
+        required = ["feature_0", "feature_1", "feature_2", "feature_3", "target"]
+        if not rows or any(column not in rows[0] for column in required):
+            raise ValueError(f"Training data must contain columns: {', '.join(required)}")
+        features = [[float(row[column]) for column in required[:4]] for row in rows]
+        labels = [int(row["target"]) for row in rows]
+        dataset_source = f"dvc:{data_path}"
+    else:
+        features, labels = load_iris(return_X_y=True)
+        dataset_source = "sklearn-iris-fallback"
     model = LogisticRegression(max_iter=1000).fit(features, labels)
     accuracy = float(model.score(features, labels))
     base = os.environ.get(
@@ -77,7 +91,7 @@ def train_and_log() -> None:
     artifact_uri = f"s3://{bucket}/{experiment_id}/{run_id}/artifacts/model"
     post("runs/log-parameter", {"run_id": run_id, "key": "artifact_uri", "value": artifact_uri})
     post("runs/log-metric", {"run_id": run_id, "key": "training_accuracy", "value": accuracy, "timestamp": int(time.time() * 1000), "step": 0})
-    for key, value in {"model_type": "logistic_regression", "training_rows": str(len(features))}.items():
+    for key, value in {"model_type": "logistic_regression", "training_rows": str(len(features)), "dataset_source": dataset_source}.items():
         post("runs/log-parameter", {"run_id": run_id, "key": key, "value": value})
     post("runs/update", {"run_id": run_id, "status": "FINISHED", "end_time": int(time.time() * 1000)})
     print(f"MLflow run_id={run_id} accuracy={accuracy:.4f}")
