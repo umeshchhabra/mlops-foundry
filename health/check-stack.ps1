@@ -25,7 +25,16 @@ foreach ($node in $nodes.items) {
 
 $apps = Get-KubectlJson @('get','applications','-n',$ArgoNamespace,'-o','json')
 foreach ($app in $apps.items) {
-    if ($app.status.sync.status -ne 'Synced' -or $app.status.health.status -ne 'Healthy') {
+    $kserveModelReady = $false
+    if ($app.metadata.name -eq 'kserve-models' -and $app.status.sync.status -eq 'Synced') {
+        $isvc = Get-KubectlJson @('get','inferenceservice','sklearn-iris','-n',$ModelNamespace,'-o','json')
+        $kserveModelReady = [bool]($isvc.status.conditions | Where-Object { $_.type -eq 'Ready' -and $_.status -eq 'True' })
+    }
+    # Argo's generic KServe health check currently treats its informational
+    # Stopped=False condition as Degraded. Use KServe's Ready condition for
+    # this application, while still requiring Argo synchronization.
+    $isHealthy = $app.status.health.status -eq 'Healthy' -or $kserveModelReady
+    if ($app.status.sync.status -ne 'Synced' -or -not $isHealthy) {
         $failures.Add("Argo application unhealthy: $($app.metadata.name) ($($app.status.sync.status)/$($app.status.health.status))")
     }
 }
