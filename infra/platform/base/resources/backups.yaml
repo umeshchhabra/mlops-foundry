@@ -13,8 +13,9 @@ kind: Job
 metadata:
   name: backup-storage-initialize
   namespace: mlops
-  # The PVC is a normal wave-0 resource, so initialize it after creation.
-  annotations: { argocd.argoproj.io/sync-wave: "1" }
+  # Keep the first consumer in wave 0 with the PVC. Kind's standard storage
+  # class uses WaitForFirstConsumer, so a later wave would deadlock binding.
+  annotations: { argocd.argoproj.io/sync-wave: "0" }
 spec:
   template:
     spec:
