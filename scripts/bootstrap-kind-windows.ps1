@@ -40,8 +40,6 @@ nodes:
   & (Join-Path $PSScriptRoot 'configure-monitoring-network.ps1') -Context "kind-$ClusterName"
   docker build --tag mlflow:3.4.0-psycopg2 --file (Join-Path $root 'images/mlflow/Dockerfile') (Join-Path $root 'images/mlflow')
   kind load docker-image mlflow:3.4.0-psycopg2 --name $ClusterName
-  docker build --tag kserve-bootstrap:1.0.0 --file (Join-Path $root 'images/kserve-bootstrap/Dockerfile') (Join-Path $root 'images/kserve-bootstrap')
-  kind load docker-image kserve-bootstrap:1.0.0 --name $ClusterName
 
   function New-RandomSecret {
     $bytes = New-Object byte[] 32

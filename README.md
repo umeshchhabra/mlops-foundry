@@ -1,6 +1,6 @@
 # MLOps Foundry
 
-MLOps Foundry is a small, practical MLOps platform that runs on your own machine. It is meant for learning and experimenting, but it follows the same shape as a real platform: GitOps manages infrastructure, training records experiments, object storage keeps artifacts, and KServe exposes models.
+MLOps Foundry is a small, practical MLOps platform that runs on your own machine. It provides shared infrastructure for development repositories: GitOps, orchestration, experiment tracking, object storage, model serving APIs, and observability.
 
 Nothing here needs a cloud account. Docker runs Kind, Kind runs Kubernetes, and your data stays on the machine running the cluster.
 
@@ -13,20 +13,22 @@ Nothing here needs a cloud account. Docker runs Kind, Kind runs Kubernetes, and 
 | PostgreSQL | Holds MLflow and Airflow metadata. |
 | MinIO | Local S3-compatible storage for artifacts, Airflow logs, models, and backups. |
 | MLflow | Lets you browse experiments, metrics, parameters, and model artifacts. |
-| Airflow | Runs the training workflow. |
-| Feast | A small local feature-store starter for learning feature definitions and materialization. |
-| KServe | Loads a model from MinIO and serves prediction requests in Kubernetes. |
+| Airflow | Runs DAGs supplied by development repositories. |
+| KServe | Provides Kubernetes APIs and controllers for model-serving workloads. |
 | Prometheus and Grafana | Collect and visualize platform metrics. |
 
-The usual flow is:
+Development repositories integrate with the platform like this:
 
 ```text
-DVC / Feast export -> Airflow -> MLflow + MinIO -> KServe -> prediction
+Development repository -> Airflow -> MLflow + MinIO -> KServe -> prediction
                          |                         |
                          +---- Prometheus/Grafana -+
 ```
 
-The default training DAG also works without a dataset export by using Iris. When a DVC/Feast CSV is placed on the Airflow DAG volume, it records that dataset source in MLflow and uses it instead.
+Training code, feature definitions, DAGs, datasets, and model-serving manifests belong in their development repositories rather than this infrastructure repository.
+
+The current development workload lives in
+[`mlops-foundary-online-retail`](https://github.com/umeshchhabra/mlops-foundary-online-retail).
 
 ## Open the platform
 
@@ -52,12 +54,6 @@ kubectl -n mlops get secret platform-secrets -o jsonpath="{.data.MINIO_ROOT_PASS
   ForEach-Object { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
 ```
 
-The KServe example is intentionally local-only. Run this in a separate terminal, then call the prediction API on `localhost:8081`:
-
-```powershell
-kubectl -n models port-forward service/sklearn-iris-predictor 8081:80
-```
-
 ## First setup on Windows
 
 Install Docker Desktop (Linux containers enabled), Git, Kind, kubectl, Helm, and PowerShell 7. Give Docker Desktop roughly 8 GB of memory. Then clone the repository and run:
@@ -77,15 +73,13 @@ kubectl -n argocd wait --for=condition=Available deployment/argocd-server --time
 pwsh ./scripts/configure-argocd-local.ps1
 pwsh ./scripts/configure-argocd-repo.ps1
 pwsh ./scripts/configure-airflow-secrets.ps1
-pwsh ./scripts/configure-kserve-storage.ps1
 kubectl apply -f infra/bootstrap/bootstrap-project.yaml
 kubectl apply -f infra/bootstrap/root-application.yaml
 pwsh ./health/wait-for-stack.ps1
-pwsh ./scripts/sync-airflow-dags.ps1
 pwsh ./health/check-stack.ps1
 ```
 
-The wait helper allows up to 15 minutes for Argo CD to install and reconcile the chart-backed services. The DAG sync helper then copies the repository DAGs into Airflow's persistent volume without giving a cluster workload access to your private repository. If an address does not open, run the health check and inspect the matching Argo CD Application.
+The wait helper allows up to 15 minutes for Argo CD to install and reconcile the chart-backed services. If an address does not open, run the health check and inspect the matching Argo CD Application.
 
 ## First setup on Linux
 
@@ -106,11 +100,9 @@ kubectl -n argocd wait --for=condition=Available deployment/argocd-server --time
 pwsh ./scripts/configure-argocd-local.ps1
 pwsh ./scripts/configure-argocd-repo.ps1
 pwsh ./scripts/configure-airflow-secrets.ps1
-pwsh ./scripts/configure-kserve-storage.ps1
 kubectl apply -f infra/bootstrap/bootstrap-project.yaml
 kubectl apply -f infra/bootstrap/root-application.yaml
 pwsh ./health/wait-for-stack.ps1
-pwsh ./scripts/sync-airflow-dags.ps1
 pwsh ./health/check-stack.ps1
 ```
 
@@ -124,20 +116,14 @@ Check the platform whenever you change infrastructure:
 pwsh ./health/check-stack.ps1
 ```
 
-Run the Airflow DAG `home_train_and_log` from the Airflow UI. It creates an MLflow run, uploads a model artifact to MinIO, and records the artifact URI. Promote a finished run to KServe with:
-
-```powershell
-pwsh ./scripts/promote-mlflow-run.ps1 -RunId <mlflow-run-id>
-kubectl apply -f infra/platform/kserve/models/promoted-inferenceservice.yaml
-```
-
-For DVC/Feast input, provide a CSV at `/opt/airflow/dags/data/training.csv` with columns `feature_0,feature_1,feature_2,feature_3,target`. The training run will log the source as a DVC input. The small Feast starter lives in [`feature-store/README.md`](feature-store/README.md).
+Connect a development repository by supplying its Airflow DAGs, MLflow client
+configuration, feature-store definitions, and KServe workload manifests. The
+platform remains independent of any one dataset or model.
 
 ## Useful deeper references
 
 - [`docs/airflow.md`](docs/airflow.md) — Airflow deployment and secret setup.
-- [`docs/versioning.md`](docs/versioning.md) — dataset, artifact, and model naming.
-- [`infra/platform/kserve/README.md`](infra/platform/kserve/README.md) — KServe example and prediction request.
+- [`infra/platform/kserve/README.md`](infra/platform/kserve/README.md) — KServe platform boundary.
 - [`infra/platform/backup/README.md`](infra/platform/backup/README.md) — backups and restore helper.
 - [`health/README.md`](health/README.md) — what the health check validates.
 

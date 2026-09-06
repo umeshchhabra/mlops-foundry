@@ -21,8 +21,6 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: kserve
       server: https://kubernetes.default.svc
-    - namespace: models
-      server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
