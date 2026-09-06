@@ -42,17 +42,17 @@ The current development workload lives in
 | MinIO S3 API | http://localhost:9000 | Used by applications, not normally a browser page. |
 | Airflow | http://localhost:8090 | Training DAGs; user is `admin`. |
 
-Passwords are created only in Kubernetes. Retrieve them locally instead of putting them in a shell history, document, or chat:
+Passwords are created only in Kubernetes. Retrieve all platform usernames and
+passwords locally with the included helper instead of putting them in a shell
+history, document, or chat:
 
 ```powershell
-# Grafana
-kubectl -n mlops get secret platform-secrets -o jsonpath="{.data.GRAFANA_ADMIN_PASSWORD}" |
-  ForEach-Object { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
-
-# MinIO
-kubectl -n mlops get secret platform-secrets -o jsonpath="{.data.MINIO_ROOT_PASSWORD}" |
-  ForEach-Object { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
+pwsh ./scripts/show-platform-credentials.ps1
 ```
+
+The helper reads Argo CD, Airflow, Grafana, MinIO, and PostgreSQL credentials
+from the current cluster. It prints them only to your terminal and does not
+write them to disk. MLflow and Prometheus currently have no login.
 
 ## First setup on Windows
 
