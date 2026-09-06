@@ -47,7 +47,13 @@ passwords locally with the included helper instead of putting them in a shell
 history, document, or chat:
 
 ```powershell
+# Windows
 pwsh ./scripts/show-platform-credentials.ps1
+```
+
+```bash
+# Linux
+./scripts/show-platform-credentials.sh
 ```
 
 The helper reads Argo CD, Airflow, Grafana, MinIO, and PostgreSQL credentials
