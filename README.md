@@ -11,7 +11,8 @@ Nothing here needs a cloud account. Docker runs Kind, Kind runs Kubernetes, and 
 | Argo CD | Watches this repository and applies infrastructure changes to Kubernetes. |
 | Helm | Supplies upstream Airflow, Prometheus, Grafana, KServe, and cert-manager charts. |
 | PostgreSQL | Holds MLflow and Airflow metadata. |
-| MinIO | Local S3-compatible storage for artifacts, Airflow logs, models, and backups. |
+| MinIO | Local S3-compatible storage for artifacts, Airflow logs, models, per-project Feast data, and backups. |
+| Redis | Persistent shared online feature store, logically separated by Feast project. |
 | MLflow | Lets you browse experiments, metrics, parameters, and model artifacts. |
 | Airflow | Runs DAGs supplied by development repositories. |
 | KServe | Provides Kubernetes APIs and controllers for model-serving workloads. |
@@ -21,8 +22,10 @@ Development repositories integrate with the platform like this:
 
 ```text
 Development repository -> Airflow -> MLflow + MinIO -> KServe -> prediction
-                         |                         |
-                         +---- Prometheus/Grafana -+
+                         |              |
+                         +-> Feast -> Redis
+                         |              |
+                         +------ Prometheus/Grafana
 ```
 
 Training code, feature definitions, DAGs, datasets, and model-serving manifests belong in their development repositories rather than this infrastructure repository.
@@ -56,7 +59,7 @@ pwsh ./scripts/show-platform-credentials.ps1
 ./scripts/show-platform-credentials.sh
 ```
 
-The helper reads Argo CD, Airflow, Grafana, MinIO, and PostgreSQL credentials
+The helper reads Argo CD, Airflow, Grafana, MinIO, Redis, and PostgreSQL credentials
 from the current cluster. It prints them only to your terminal and does not
 write them to disk. MLflow and Prometheus currently have no login.
 
@@ -126,9 +129,20 @@ Connect a development repository by supplying its Airflow DAGs, MLflow client
 configuration, feature-store definitions, and KServe workload manifests. The
 platform remains independent of any one dataset or model.
 
+Create the project-specific Feast namespace, bucket, and runtime configuration
+before deploying a development repository:
+
+```powershell
+pwsh ./scripts/configure-feast-project.ps1 -Project <project_name>
+```
+
+On Linux, use `./scripts/configure-feast-project.sh <project_name>`. See
+[`docs/feature-store.md`](docs/feature-store.md) for the multi-project contract.
+
 ## Useful deeper references
 
 - [`docs/airflow.md`](docs/airflow.md) — Airflow deployment and secret setup.
+- [`docs/feature-store.md`](docs/feature-store.md) — multi-project Feast onboarding and ownership.
 - [`infra/platform/kserve/README.md`](infra/platform/kserve/README.md) — KServe platform boundary.
 - [`infra/platform/backup/README.md`](infra/platform/backup/README.md) — backups and restore helper.
 - [`health/README.md`](health/README.md) — what the health check validates.

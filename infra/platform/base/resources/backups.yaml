@@ -109,6 +109,39 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
+  name: redis-backup
+  namespace: mlops
+spec:
+  schedule: "7 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext: { seccompProfile: { type: RuntimeDefault } }
+          containers:
+            - name: redis-backup
+              image: redis:7.4-alpine
+              env:
+                - name: REDISCLI_AUTH
+                  valueFrom: { secretKeyRef: { name: platform-secrets, key: REDIS_PASSWORD } }
+              command: [/bin/sh, -ec]
+              args:
+                - |
+                  stamp=$(date -u +%Y%m%dT%H%M%SZ)
+                  mkdir -p /backup/redis
+                  redis-cli -h redis --rdb "/backup/redis/redis-${stamp}.rdb"
+              volumeMounts: [{ name: backups, mountPath: /backup }]
+              resources: { requests: { cpu: 25m, memory: 64Mi }, limits: { cpu: 250m, memory: 256Mi } }
+              securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+          volumes: [{ name: backups, persistentVolumeClaim: { claimName: platform-backups-pvc } }]
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
   name: backup-retention
   namespace: mlops
 spec:
@@ -131,6 +164,7 @@ spec:
                 - |
                   find /backup/postgres -type f -mtime +14 -delete
                   find /backup/minio -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +
+                  find /backup/redis -type f -mtime +14 -delete
               volumeMounts: [{ name: backups, mountPath: /backup }]
               resources: { requests: { cpu: 10m, memory: 32Mi }, limits: { cpu: 100m, memory: 128Mi } }
           volumes: [{ name: backups, persistentVolumeClaim: { claimName: platform-backups-pvc } }]

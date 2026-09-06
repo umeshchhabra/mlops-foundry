@@ -42,5 +42,5 @@ jobs:
 
       - name: Check shell script syntax
         run: |
-          sed -i 's/\r$//' scripts/bootstrap-kind-linux.sh
-          bash -n scripts/bootstrap-kind-linux.sh
+          find scripts -name '*.sh' -print0 | xargs -0 sed -i 's/\r$//'
+          find scripts -name '*.sh' -print0 | xargs -0 -n1 bash -n

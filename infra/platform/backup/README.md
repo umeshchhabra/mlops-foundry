@@ -11,7 +11,9 @@ two daily backup CronJobs and one retention CronJob in `mlops`:
   days.
 
 Both jobs retain 14 days of backups and read credentials from
-`platform-secrets`; no credentials or backup contents are stored in Git.
+`platform-secrets`; no credentials or backup contents are stored in Git. Redis
+online-store snapshots are written beside the PostgreSQL and MinIO backups;
+online features can also be rebuilt from each project's offline feature data.
 
 The PVC is an operational staging area, not an off-host disaster-recovery
 copy. Periodically copy it to independent storage for real recovery protection.
