@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: models
-  labels:
-    app.kubernetes.io/part-of: mlops-foundry
-    app.kubernetes.io/component: model-serving

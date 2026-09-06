@@ -1,3 +1,0 @@
-feast==0.65.0
-pandas==2.2.3
-pyarrow==18.1.0

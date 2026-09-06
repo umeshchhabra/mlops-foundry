@@ -26,8 +26,6 @@ pwsh "$ROOT/scripts/configure-monitoring-network.ps1" -Context "kind-$CLUSTER_NA
 # selects its native CPU architecture, then Kind distributes it to every node.
 docker build --tag mlflow:3.4.0-psycopg2 --file "$ROOT/images/mlflow/Dockerfile" "$ROOT/images/mlflow"
 kind load docker-image mlflow:3.4.0-psycopg2 --name "$CLUSTER_NAME"
-docker build --tag kserve-bootstrap:1.0.0 --file "$ROOT/images/kserve-bootstrap/Dockerfile" "$ROOT/images/kserve-bootstrap"
-kind load docker-image kserve-bootstrap:1.0.0 --name "$CLUSTER_NAME"
 
 random() {
   # Hex output is already shell-safe and avoids SIGPIPE failures under

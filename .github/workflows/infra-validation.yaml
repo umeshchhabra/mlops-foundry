@@ -31,11 +31,6 @@ jobs:
           kubectl kustomize infra/platform/base > /tmp/platform.yaml
           test -s /tmp/platform.yaml
 
-      - name: Render model-serving Kustomize
-        run: |
-          kubectl kustomize infra/platform/kserve/models > /tmp/models.yaml
-          test -s /tmp/models.yaml
-
       - name: Parse PowerShell scripts
         shell: pwsh
         run: |
