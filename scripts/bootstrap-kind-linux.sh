@@ -32,7 +32,7 @@ random() {
   # `set -o pipefail` that can occur with a tr/head pipeline.
   openssl rand -hex 16
 }
-postgres_password="$(random)"; airflow_password="$(random)"; minio_password="$(random)"
+postgres_password="$(random)"; airflow_password="$(random)"; minio_password="$(random)"; redis_password="$(random)"
 kubectl create secret generic platform-secrets -n mlops \
   --from-literal=POSTGRES_USER=mlflow --from-literal=POSTGRES_PASSWORD="$postgres_password" \
   --from-literal=AIRFLOW_DB_PASSWORD="$airflow_password" \
@@ -40,5 +40,6 @@ kubectl create secret generic platform-secrets -n mlops \
   --from-literal=MLFLOW_DB_URI="postgresql+psycopg2://mlflow:$postgres_password@postgres:5432/mlflow" \
   --from-literal=MINIO_ROOT_USER=mlops-admin --from-literal=MINIO_ROOT_PASSWORD="$minio_password" \
   --from-literal=AWS_ACCESS_KEY_ID=mlops-admin --from-literal=AWS_SECRET_ACCESS_KEY="$minio_password" \
+  --from-literal=REDIS_PASSWORD="$redis_password" \
   --from-literal=GRAFANA_ADMIN_USER=admin --from-literal=GRAFANA_ADMIN_PASSWORD="$(random)"
 echo 'Cluster, storage claims, local images, and runtime secrets created. Configure Argo CD next.'

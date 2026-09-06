@@ -29,6 +29,7 @@ $credentials = @(
   [pscustomobject]@{ Service = 'Airflow'; Username = 'admin'; Password = Get-SecretValue $Namespace 'airflow-admin' 'password' },
   [pscustomobject]@{ Service = 'Grafana'; Username = Get-SecretValue $Namespace 'platform-secrets' 'GRAFANA_ADMIN_USER'; Password = Get-SecretValue $Namespace 'platform-secrets' 'GRAFANA_ADMIN_PASSWORD' },
   [pscustomobject]@{ Service = 'MinIO'; Username = Get-SecretValue $Namespace 'platform-secrets' 'MINIO_ROOT_USER'; Password = Get-SecretValue $Namespace 'platform-secrets' 'MINIO_ROOT_PASSWORD' },
+  [pscustomobject]@{ Service = 'Redis'; Username = 'default'; Password = Get-SecretValue $Namespace 'platform-secrets' 'REDIS_PASSWORD' },
   [pscustomobject]@{ Service = 'PostgreSQL'; Username = Get-SecretValue $Namespace 'platform-secrets' 'POSTGRES_USER'; Password = Get-SecretValue $Namespace 'platform-secrets' 'POSTGRES_PASSWORD' }
 )
 

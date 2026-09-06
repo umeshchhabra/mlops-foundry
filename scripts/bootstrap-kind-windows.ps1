@@ -50,12 +50,14 @@ nodes:
   $airflowPassword = New-RandomSecret
   $minioPassword = New-RandomSecret
   $grafanaPassword = New-RandomSecret
+  $redisPassword = New-RandomSecret
   kubectl create secret generic platform-secrets -n mlops `
     "--from-literal=POSTGRES_USER=mlflow" "--from-literal=POSTGRES_PASSWORD=$postgresPassword" `
     "--from-literal=AIRFLOW_DB_PASSWORD=$airflowPassword" "--from-literal=AIRFLOW_DB_URI=postgresql+psycopg2://airflow:$airflowPassword@postgres:5432/airflow" `
     "--from-literal=MLFLOW_DB_URI=postgresql+psycopg2://mlflow:$postgresPassword@postgres:5432/mlflow" `
     "--from-literal=MINIO_ROOT_USER=mlops-admin" "--from-literal=MINIO_ROOT_PASSWORD=$minioPassword" `
     "--from-literal=AWS_ACCESS_KEY_ID=mlops-admin" "--from-literal=AWS_SECRET_ACCESS_KEY=$minioPassword" `
+    "--from-literal=REDIS_PASSWORD=$redisPassword" `
     "--from-literal=GRAFANA_ADMIN_USER=admin" "--from-literal=GRAFANA_ADMIN_PASSWORD=$grafanaPassword"
   if ($LASTEXITCODE -ne 0) { throw 'Failed to create platform-secrets.' }
   Write-Host 'Cluster, storage, local images, and runtime-only secrets are ready. Configure Argo CD next.'

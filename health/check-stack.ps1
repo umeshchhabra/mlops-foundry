@@ -58,6 +58,9 @@ foreach ($endpoint in @(
     if ($LASTEXITCODE -ne 0) { $failures.Add("Endpoint failed: $endpoint") }
 }
 
+$redis = Get-KubectlJson @('get','deployment','redis','-n',$Namespace,'-o','json')
+if ($redis.status.availableReplicas -lt 1) { $failures.Add('Redis deployment has no available replica.') }
+
 # A ready Prometheus UI can still have broken Kubernetes discovery. Require
 # both a successful exporter scrape and node metrics for every current node.
 foreach ($check in @(
@@ -65,6 +68,7 @@ foreach ($check in @(
     @{ Query = 'count(count by (node) (kube_node_info))'; Minimum = @($nodes.items).Count; Name = 'Kubernetes node metrics' },
     @{ Query = 'count(up{job="kubernetes-apiservers"} == 1)'; Minimum = 1; Name = 'API server scrape' },
     @{ Query = 'up{job="kserve-controller"} == 1'; Minimum = 1; Name = 'KServe controller scrape' },
+    @{ Query = 'redis_up == 1'; Minimum = 1; Name = 'Redis exporter scrape' },
     @{ Query = 'count(up{job="kubernetes-nodes"} == 1)'; Minimum = @($nodes.items).Count; Name = 'Kubelet scrapes' },
     @{ Query = 'count(up{job="kubernetes-nodes-cadvisor"} == 1)'; Minimum = @($nodes.items).Count; Name = 'cAdvisor scrapes' }
 )) {

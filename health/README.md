@@ -13,9 +13,9 @@ pwsh ./health/wait-for-stack.ps1
 ```
 
 It checks node readiness, Argo CD application state, workload pod readiness,
-the KServe controller, and the MLflow, MinIO, Prometheus, and Grafana health
+the KServe controller, Redis, Feast bucket initialization, and the MLflow, MinIO, Prometheus, and Grafana health
 endpoints. It also requires a successful kube-state-metrics scrape and node
-metrics for every Kubernetes node, so a responsive Prometheus UI alone is not
+metrics for every Kubernetes node plus a healthy Redis exporter, so a responsive Prometheus UI alone is not
 enough to pass. API server, kubelet, cAdvisor, and KServe controller scrapes must also be up.
 
 KServe controller metrics use a dedicated HTTPS job with the Prometheus service

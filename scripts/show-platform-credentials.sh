@@ -28,6 +28,7 @@ printf '%-12s %-24s %s\n' 'Argo CD' 'admin' "$(secret_value argocd argocd-initia
 printf '%-12s %-24s %s\n' 'Airflow' 'admin' "$(secret_value "$namespace" airflow-admin password)"
 printf '%-12s %-24s %s\n' 'Grafana' "$(secret_value "$namespace" platform-secrets GRAFANA_ADMIN_USER)" "$(secret_value "$namespace" platform-secrets GRAFANA_ADMIN_PASSWORD)"
 printf '%-12s %-24s %s\n' 'MinIO' "$(secret_value "$namespace" platform-secrets MINIO_ROOT_USER)" "$(secret_value "$namespace" platform-secrets MINIO_ROOT_PASSWORD)"
+printf '%-12s %-24s %s\n' 'Redis' 'default' "$(secret_value "$namespace" platform-secrets REDIS_PASSWORD)"
 printf '%-12s %-24s %s\n' 'PostgreSQL' "$(secret_value "$namespace" platform-secrets POSTGRES_USER)" "$(secret_value "$namespace" platform-secrets POSTGRES_PASSWORD)"
 
 printf '\nMLflow and Prometheus do not require login. KServe does not provide a user-facing login.\n'
