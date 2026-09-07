@@ -4,6 +4,19 @@ MLOps Foundry is a small, practical MLOps platform that runs on your own machine
 
 Nothing here needs a cloud account. Docker runs Kind, Kind runs Kubernetes, and your data stays on the machine running the cluster.
 
+## What this platform does for you
+
+MLOps Foundry is a shared MLOps platform: Kubernetes/GitOps, MinIO, PostgreSQL,
+Redis, Airflow, MLflow, KServe, Prometheus, and Grafana. It owns platform
+reliability, storage, observability, backups, access boundaries, and service
+availability—not a model, dataset, DAG, or deployed application.
+
+When a new training project needs support, the platform team provisions only
+the requested shared-service resources, such as a dedicated MinIO bucket, an
+MLflow experiment, an Airflow pool, and Feast configuration. Training teams
+keep their pipelines and model workloads in their own repositories, allowing
+this platform to support many independent projects without being tied to one.
+
 ## What is running
 
 | Service | Why it is here |
