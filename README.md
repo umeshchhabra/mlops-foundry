@@ -162,21 +162,11 @@ Connect a development repository by supplying its Airflow DAGs, MLflow client
 configuration, feature-store definitions, and KServe workload manifests. The
 platform remains independent of any one dataset or model.
 
-When a training team requests support for a new project, the platform team can
-provision only the requested shared-service resources—such as storage access,
-an MLflow experiment, an Airflow pool, and Feast configuration—without creating
-any project Kubernetes workload:
-
-```powershell
-pwsh ./scripts/provision-project-resources.ps1 `
-  -Project <project_id> `
-  -Services artifacts,mlflow,airflow,kserve,feast
-```
-
-On Linux, use `./scripts/provision-project-resources.sh --project <project_id>
---services artifacts,mlflow,airflow,kserve,feast`. See
-[`docs/project-provisioning.md`](docs/project-provisioning.md) for the request
-format, created resources, and handoff contract.
+When a training team requests support for a new project, the platform team uses
+the individual MinIO, MLflow, Airflow, KServe, and Feast service operations in
+[`docs/project-provisioning.md`](docs/project-provisioning.md). The guide has
+both PowerShell and Bash commands and does not create any project Kubernetes
+workload.
 
 ## Useful deeper references
 

@@ -1,73 +1,103 @@
-# Project provisioning
+# Project-service provisioning guide
 
-This document describes the handoff between a model-training team and the
-platform team. The platform runs shared services once; it does not deploy a
-project's training pod, Feast server, or KServe model service.
+Use this guide when a training team asks the platform team to support a model
+project. It documents individual service operations; it does not create project
+pods, services, namespaces, training jobs, Feast servers, or KServe models.
 
-## Request from a training team
+## Collect the request
 
-Give the platform team a stable project ID and the services required. Project
-IDs use lowercase letters, numbers, and underscores. Examples of supported
-services are `artifacts`, `mlflow`, `airflow`, `kserve`, and `feast`.
+Ask for a lowercase project ID, a display name, requested services, expected
+storage size, and Airflow concurrency. Supported shared services are artifacts
+(MinIO), MLflow, Airflow, KServe, and Feast. Use one dedicated bucket named
+`mlops-<project-id-with-hyphens>` with `data/`, `artifacts/`, `models/`,
+`features/registry.pb`, and `features/offline/` prefixes.
 
-```text
-Project: <project_id>
-Display name: <human-readable name>
-Services: artifacts, mlflow, airflow, kserve, feast
-Airflow slots: 1
-```
+## MinIO: bucket and scoped credentials
 
-## What the platform team provisions
+Run these commands as the platform operator after retrieving the MinIO root
+credentials with `pwsh ./scripts/show-platform-credentials.ps1`. Install the
+MinIO client (`mc`) on the operator machine. Store generated project credentials
+only in the approved secret store, never in Git or chat.
 
-| Requested service | Platform resource created |
-| --- | --- |
-| `artifacts` | A dedicated MinIO bucket and an access policy limited to that bucket. |
-| `mlflow` | A named MLflow experiment whose artifacts are stored under that bucket. |
-| `airflow` | An Airflow pool named for the project, limiting concurrent work. |
-| `kserve` | A catalog entry confirming the shared KServe controller is available; no model is deployed. |
-| `feast` | Registry and offline-data locations in the bucket plus the shared Redis endpoint. |
-
-Every request is recorded in a non-sensitive ConfigMap in the `mlops` namespace.
-Storage credentials are held in a project-specific Kubernetes Secret in the
-same namespace. The platform team shares those credentials through an approved
-private channel; they are never committed to Git.
-
-No Kubernetes namespace, Deployment, Service, Airflow DAG, training Job, Feast
-server, or KServe `InferenceService` is created by this provisioning process.
-Those are development-project workloads and remain owned by the development
-repository.
-
-## Provisioning commands
-
-Windows PowerShell:
+PowerShell:
 
 ```powershell
-pwsh ./scripts/provision-project-resources.ps1 `
-  -Project <project_id> `
-  -DisplayName '<project display name>' `
-  -Services artifacts,mlflow,airflow,kserve,feast `
-  -AirflowSlots 1
+$Project = '<project_id>'; $Slug = $Project.Replace('_', '-')
+$Bucket = "mlops-$Slug"; $AccessKey = '<project-access-key>'; $SecretKey = '<project-secret-key>'
+$PolicyName = "project-$Slug"
+mc alias set mlops http://localhost:9000 '<minio-root-user>' '<minio-root-password>'
+mc mb --ignore-existing "mlops/$Bucket"
+$PolicyFile = Join-Path $env:TEMP "$PolicyName.json"
+@"
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:ListBucket","s3:GetBucketLocation"],"Resource":["arn:aws:s3:::$Bucket"]},{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject","s3:DeleteObject"],"Resource":["arn:aws:s3:::$Bucket/*"]}]}
+"@ | Set-Content -NoNewline $PolicyFile
+mc admin policy create mlops $PolicyName $PolicyFile
+mc admin user add mlops $AccessKey $SecretKey
+mc admin policy attach mlops $PolicyName --user $AccessKey
+Remove-Item -LiteralPath $PolicyFile
 ```
 
-Linux:
+Bash:
 
 ```bash
-./scripts/provision-project-resources.sh \
-  --project <project_id> \
-  --display-name '<project display name>' \
-  --services artifacts,mlflow,airflow,kserve,feast \
-  --airflow-slots 1
+project='<project_id>'; slug="${project//_/-}"; bucket="mlops-$slug"
+access_key='<project-access-key>'; secret_key='<project-secret-key>'; policy_name="project-$slug"
+mc alias set mlops http://localhost:9000 '<minio-root-user>' '<minio-root-password>'
+mc mb --ignore-existing "mlops/$bucket"
+policy_file="$(mktemp)"; trap 'rm -f "$policy_file"' EXIT
+printf '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:ListBucket","s3:GetBucketLocation"],"Resource":["arn:aws:s3:::%s"]},{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject","s3:DeleteObject"],"Resource":["arn:aws:s3:::%s/*"]}]}' "$bucket" "$bucket" > "$policy_file"
+mc admin policy create mlops "$policy_name" "$policy_file"
+mc admin user add mlops "$access_key" "$secret_key"
+mc admin policy attach mlops "$policy_name" --user "$access_key"
 ```
 
-Both scripts are idempotent. Re-running one retains the existing project MinIO
-access key and secret, refreshes the bucket policy, and updates the catalog
-record. The scripts require `kubectl`; the Linux version also requires `curl`,
-`openssl`, and `sha256sum`.
+## MLflow: experiment and artifact location
 
-## What the development team receives
+Create one experiment after the bucket exists. Do not alter an existing
+experiment's artifact location.
 
-The platform team supplies the project bucket name, MinIO credentials, MLflow
-tracking URI and experiment name, Airflow pool name, and—when Feast is
-requested—the registry path, offline prefix, Redis host, and Redis password.
-The development repository then uses those values in its own pipeline and
-deployment configuration.
+PowerShell:
+
+```powershell
+$DisplayName = '<project display name>'
+$Body = @{ name = $DisplayName; artifact_location = "s3://$Bucket/artifacts" } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri 'http://localhost:5000/api/2.0/mlflow/experiments/create' -ContentType 'application/json' -Body $Body
+```
+
+Bash:
+
+```bash
+display_name='<project display name>'
+curl --fail-with-body -X POST http://localhost:5000/api/2.0/mlflow/experiments/create -H 'Content-Type: application/json' -d "{\"name\":\"$display_name\",\"artifact_location\":\"s3://$bucket/artifacts\"}"
+```
+
+## Airflow: project pool
+
+This creates scheduler metadata only, not a project workload.
+
+PowerShell:
+
+```powershell
+$Scheduler = kubectl -n mlops get pod -l component=scheduler -o jsonpath='{.items[0].metadata.name}'
+kubectl -n mlops exec $Scheduler -c scheduler -- airflow pools set "project-$Slug" 1 '<project display name> workload limit'
+```
+
+Bash:
+
+```bash
+scheduler="$(kubectl -n mlops get pod -l component=scheduler -o jsonpath='{.items[0].metadata.name}')"
+kubectl -n mlops exec "$scheduler" -c scheduler -- airflow pools set "project-$slug" 1 '<project display name> workload limit'
+```
+
+## KServe and Feast
+
+KServe is already shared; verify it with `kubectl -n kserve get deployment
+kserve-controller-manager`. The development repository later deploys its own
+`InferenceService` if serving is required.
+
+For Feast, give the development team the project ID, its bucket credentials,
+`s3://mlops-<project-id-with-hyphens>/features/registry.pb`, the
+`features/offline/` prefix, and the shared Redis endpoint
+`redis.mlops.svc.cluster.local:6379`. The local platform currently uses shared
+Redis credentials, so Feast project names are a logical—not security—isolation
+boundary.
