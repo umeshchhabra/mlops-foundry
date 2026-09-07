@@ -28,6 +28,39 @@ Development repository -> Airflow -> MLflow + MinIO -> KServe -> prediction
                          +------ Prometheus/Grafana
 ```
 
+## Platform at a glance
+
+```text
+                         Git repository
+                               |
+                         Argo CD + Helm
+                               |
+        +---------------- Kubernetes / Kind ----------------+
+        |                                                    |
+        |  Data and state                                    |
+        |  PostgreSQL  MinIO  Redis  persistent volumes      |
+        |                                                    |
+        |  MLOps services                                    |
+        |  Airflow  MLflow  KServe  project Feast servers    |
+        |                                                    |
+        |  Monitoring                                        |
+        |  Prometheus  Grafana                               |
+        +----------------------------------------------------+
+```
+
+The infrastructure repository owns the shared platform: Kubernetes setup,
+GitOps, storage, Redis, MinIO, PostgreSQL, Airflow, MLflow, KServe, monitoring,
+network policies, backups, and runtime-secret bootstrap. It deliberately does
+not contain a model, dataset, training DAG, feature definition, or deployed
+Feast server for any individual project.
+
+Each development repository is a tenant of that platform. It supplies its own
+training code, Airflow DAGs, feature definitions, and KServe workloads. For
+Feast, onboarding creates a separate Kubernetes namespace and MinIO bucket per
+project, while Redis remains shared and Feast uses the project name to separate
+online feature data. This means adding a new project does not require changing
+the infrastructure manifests.
+
 Training code, feature definitions, DAGs, datasets, and model-serving manifests belong in their development repositories rather than this infrastructure repository.
 
 The current development workload lives in
