@@ -162,20 +162,16 @@ Connect a development repository by supplying its Airflow DAGs, MLflow client
 configuration, feature-store definitions, and KServe workload manifests. The
 platform remains independent of any one dataset or model.
 
-Create the project-specific Feast namespace, bucket, and runtime configuration
-before deploying a development repository:
-
-```powershell
-pwsh ./scripts/configure-feast-project.ps1 -Project <project_name>
-```
-
-On Linux, use `./scripts/configure-feast-project.sh <project_name>`. See
-[`docs/feature-store.md`](docs/feature-store.md) for the multi-project contract.
+When a training team requests support for a new project, the platform team uses
+the individual MinIO, MLflow, Airflow, KServe, and Feast service operations in
+[`docs/project-provisioning.md`](docs/project-provisioning.md). The guide has
+both PowerShell and Bash commands and does not create any project Kubernetes
+workload.
 
 ## Useful deeper references
 
 - [`docs/airflow.md`](docs/airflow.md) — Airflow deployment and secret setup.
-- [`docs/feature-store.md`](docs/feature-store.md) — multi-project Feast onboarding and ownership.
+- [`docs/project-provisioning.md`](docs/project-provisioning.md) — training-team request and platform-team provisioning workflow.
 - [`infra/platform/kserve/README.md`](infra/platform/kserve/README.md) — KServe platform boundary.
 - [`infra/platform/backup/README.md`](infra/platform/backup/README.md) — backups and restore helper.
 - [`health/README.md`](health/README.md) — what the health check validates.
