@@ -13,12 +13,11 @@ During a first installation, wait for Argo CD reconciliation with:
 ~~~
 
 It checks node readiness, Argo CD application state, workload pod readiness,
-the KServe controller, Redis, Feast bucket initialization, and the MLflow,
-MinIO, Prometheus, and Grafana health endpoints. It also requires a successful
-kube-state-metrics scrape and node metrics for every Kubernetes node plus a
-healthy Redis exporter, so a responsive Prometheus UI alone is not enough to
-pass. API server, kubelet, cAdvisor, and KServe controller scrapes must also
-be up.
+the KServe controller, Redis, and the MLflow, MinIO, Prometheus, and Grafana
+health endpoints. It also requires a successful kube-state-metrics scrape and
+node metrics for every Kubernetes node plus a healthy Redis exporter, so a
+responsive Prometheus UI alone is not enough to pass. API server, kubelet,
+cAdvisor, and KServe controller scrapes must also be up.
 
 KServe controller metrics use a dedicated HTTPS job with the Prometheus service
 account token; the generic anonymous job excludes this endpoint. The RBAC proxy

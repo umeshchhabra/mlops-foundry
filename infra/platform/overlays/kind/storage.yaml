@@ -3,6 +3,45 @@ kind: Namespace
 metadata: { name: mlops }
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: local-path-config
+  namespace: local-path-storage
+data:
+  config.json: |-
+    {
+            "nodePathMap":[
+            {
+                    "node":"DEFAULT_PATH_FOR_NON_LISTED_NODES",
+                    "paths":["/data/local-path-provisioner"]
+            }
+            ]
+    }
+  helperPod.yaml: |-
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: helper-pod
+    spec:
+      priorityClassName: system-node-critical
+      tolerations:
+        - key: node.kubernetes.io/disk-pressure
+          operator: Exists
+          effect: NoSchedule
+      containers:
+      - name: helper-pod
+        image: docker.io/kindest/local-path-helper:v20241212-8ac705d0
+        imagePullPolicy: IfNotPresent
+  setup: |-
+    #!/bin/sh
+    set -eu
+    mkdir -m 0777 -p "$VOL_DIR"
+  teardown: |-
+    #!/bin/sh
+    set -eu
+    rm -rf "$VOL_DIR"
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata: { name: postgres-pvc, namespace: mlops }
 spec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 5Gi } } }

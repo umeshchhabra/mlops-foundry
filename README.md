@@ -8,6 +8,24 @@ observability.
 Nothing here needs a cloud account. Docker runs Kind, Kind runs Kubernetes, and
 your data stays on the machine running the cluster.
 
+## Prerequisites
+
+Use one of these supported operator environments:
+
+| Area | Requirement |
+| --- | --- |
+| Operating system | A 64-bit Linux host (AMD64 or ARM64), or Windows 10/11 with a WSL 2 Linux distribution. Run all repository commands from Linux or WSL—not native Windows. |
+| Container runtime | Docker Engine on Linux, or Docker Desktop with WSL integration enabled on Windows. The docker command must work inside the Linux/WSL shell. |
+| Command-line tools | Bash, Git, Kind, kubectl, and Python 3. Python uses only the standard library; no pip install step is required for platform setup. |
+| Machine capacity | At least 8 GB RAM. Four CPU cores and roughly 20 GB of free disk space are recommended for the four-node Kind cluster and container images. |
+| Network and ports | Internet access is needed for the initial Argo CD and chart/image downloads. Keep 8080, 8443, 5000, 8090, and 9000–9003 free on the host. |
+| Repository access | An account that can clone this private repository. During Argo CD setup, use a separate read-only GitHub token with access to this repository. |
+| Persistent data directory | Choose a new, empty Linux filesystem directory for MLOPS_DATA_DIR. Do not use the repository directory, a filesystem root, or a broad shared directory. On Windows, keep it inside the WSL filesystem rather than /mnt/c. |
+
+Helm and a native Windows shell are not prerequisites. The platform uses Bash
+for lifecycle commands and Python 3 for structured checks; Argo CD retrieves
+Helm charts itself.
+
 ## What this platform does for you
 
 MLOps Foundry is a shared MLOps platform: Kubernetes/GitOps, MinIO,
@@ -89,11 +107,17 @@ WSL 2 distribution on a Windows host.
 ### Windows host with WSL 2
 
 Install Docker Desktop with WSL integration enabled. In your Linux
-distribution, install Git, Docker CLI access, Kind, kubectl, Helm, and Python
-3. Give Docker Desktop roughly 8 GB of memory and clone the
+distribution, install Git, Docker CLI access, Kind, kubectl, and Python 3.
+Give Docker Desktop roughly 8 GB of memory and clone the
 repository into the Linux filesystem rather than a mounted drive.
 
 ~~~bash
+cd ~
+docker info >/dev/null
+kind version
+kubectl version --client
+python3 --version
+# Authenticate Git for this private clone first, if you have not already.
 git clone https://github.com/umeshchhabra/mlops-foundry.git
 cd mlops-foundry
 MLOPS_DATA_DIR="$HOME/.local/share/mlops-foundry" ./scripts/bootstrap-kind.sh
@@ -101,24 +125,35 @@ MLOPS_DATA_DIR="$HOME/.local/share/mlops-foundry" ./scripts/bootstrap-kind.sh
 
 ### Linux host
 
-Install Docker, Git, Kind, kubectl, Helm, and Python 3. Use a 64-bit host with
-at least 8 GB RAM; an SSD-backed data directory is strongly recommended.
+Install Docker, Git, Kind, kubectl, and Python 3. Use a 64-bit host with at
+least 8 GB RAM; an SSD-backed data directory is strongly recommended.
 
 ~~~bash
+docker info >/dev/null
+kind version
+kubectl version --client
+python3 --version
 git clone https://github.com/umeshchhabra/mlops-foundry.git
 cd mlops-foundry
 MLOPS_DATA_DIR=/mnt/mlops-data ./scripts/bootstrap-kind.sh
 ~~~
 
-The bootstrap creates the Kind cluster, persistent-volume claims, local
-runtime secrets, and the MLflow image. It does not install Argo CD, because
-that is the point where you supply a read-only GitHub token for this private
-repository.
+The bootstrap creates the Kind cluster, configures the Kind local-path
+provisioner to keep PVC data under MLOPS_DATA_DIR, creates platform claims and
+runtime secrets, and builds the MLflow and MinIO images locally. This avoids
+depending on an external MinIO container registry during a Kind installation.
+It does not install Argo CD,
+because that is the point where you supply a read-only GitHub token for this
+private repository. Ensure these host ports are unused before creating the
+cluster: 8080, 8443, 5000, 8090, and 9000 through 9003.
+Choose a new, empty MLOPS_DATA_DIR; bootstrap records an ownership marker there
+so its cleanup helper cannot erase an unrelated directory later.
 
 For either host type, continue from the same shell:
 
 ~~~bash
-kubectl create namespace argocd
+kubectl config use-context kind-mlops
+kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply --server-side --force-conflicts -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl -n argocd wait --for=condition=Available deployment/argocd-server --timeout=5m
 ./scripts/configure-argocd-local.sh
@@ -133,6 +168,37 @@ python3 ./health/check-stack.py
 The wait helper allows up to 15 minutes for Argo CD to install and reconcile
 the chart-backed services. If an address does not open, run the health check
 and inspect the matching Argo CD Application.
+
+The GitOps Applications intentionally track main. A clean run from an
+unmerged branch validates that branch's local bootstrap scripts and Kind
+overlay, while Argo CD installs the committed platform manifests from main.
+Merge infrastructure manifest changes before treating an Argo CD rebuild as an
+end-to-end test of the branch itself.
+
+## Rebuild from scratch
+
+This is destructive. It removes only the named Kind cluster and, when
+requested, the supplied MLOPS data directory. It does not delete your Git
+checkout, Docker installation, unrelated Kind clusters, or Docker image cache.
+It permanently removes Kubernetes resources and platform state: credentials,
+MinIO objects, databases, Redis data, dashboards, metrics, and local backups.
+
+From the repository checkout used to run the platform:
+
+~~~bash
+# Reuse the exact data directory from the original bootstrap command.
+# Example: use /mnt/mlops-data on Linux, or the WSL default below.
+export MLOPS_DATA_DIR="$HOME/.local/share/mlops-foundry"
+./scripts/destroy-kind.sh --delete-data --confirm
+./scripts/bootstrap-kind.sh
+kubectl config use-context kind-mlops
+~~~
+
+Then run the Argo CD setup block above again. The reset creates new runtime
+credentials, so enter the read-only GitHub token and choose a new Airflow
+admin password when prompted. Do not save either value in source control,
+shell history, or an environment file. The bootstrap creates a marker inside
+MLOPS_DATA_DIR; the cleanup helper refuses to remove an unmarked directory.
 
 For Raspberry Pi details and architecture checks, see
 [docs/linux-kind.md](docs/linux-kind.md).
@@ -161,6 +227,7 @@ Bash commands and does not create a project Kubernetes workload.
 - [infra/platform/kserve/README.md](infra/platform/kserve/README.md) — KServe platform boundary.
 - [infra/platform/backup/README.md](infra/platform/backup/README.md) — backups and restore helper.
 - [health/README.md](health/README.md) — what the health check validates.
+- [scripts/destroy-kind.sh](scripts/destroy-kind.sh) — scoped clean-rebuild helper.
 
 ## A note on scope
 

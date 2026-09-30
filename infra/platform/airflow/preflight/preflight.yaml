@@ -33,7 +33,8 @@ spec:
               psql -h postgres -U mlflow -d airflow -c 'ALTER SCHEMA public OWNER TO airflow;'
               psql -h postgres -U mlflow -d airflow -c 'GRANT ALL ON SCHEMA public TO airflow;'
         - name: create-log-bucket
-          image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+          image: mlops-minio:2025-09-07
+          imagePullPolicy: IfNotPresent
           securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] }, readOnlyRootFilesystem: true }
           env:
             - name: MINIO_ROOT_USER

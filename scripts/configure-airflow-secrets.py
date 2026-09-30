@@ -60,6 +60,11 @@ def main() -> int:
         default=os.environ.get("MLOPS_NAMESPACE", "mlops"),
         help="Platform namespace",
     )
+    parser.add_argument(
+        "--admin-password-stdin",
+        action="store_true",
+        help="Read the Airflow admin password from standard input instead of prompting",
+    )
     arguments = parser.parse_args()
 
     try:
@@ -70,7 +75,10 @@ def main() -> int:
         print(f"Cannot read Airflow metadata connection: {error}", file=sys.stderr)
         return 1
 
-    admin_password = getpass.getpass("Choose the Airflow admin password: ")
+    if arguments.admin_password_stdin:
+        admin_password = sys.stdin.readline().rstrip("\r\n")
+    else:
+        admin_password = getpass.getpass("Choose the Airflow admin password: ")
     if not admin_password:
         print("The Airflow admin password cannot be empty.", file=sys.stderr)
         return 2
@@ -92,12 +100,13 @@ def main() -> int:
         secret_manifest(arguments.namespace, "airflow-admin", "password", admin_password),
     ]
     try:
-        subprocess.run(
-            ["kubectl", "--context", arguments.context, "apply", "-f", "-"],
-            check=True,
-            input="---\n".join(json.dumps(manifest) for manifest in manifests),
-            text=True,
-        )
+        for manifest in manifests:
+            subprocess.run(
+                ["kubectl", "--context", arguments.context, "apply", "-f", "-"],
+                check=True,
+                input=json.dumps(manifest),
+                text=True,
+            )
     except subprocess.CalledProcessError as error:
         print(f"Failed to apply Airflow secrets: {error}", file=sys.stderr)
         return error.returncode or 1

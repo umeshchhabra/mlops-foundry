@@ -15,8 +15,9 @@ python3 ./scripts/configure-airflow-secrets.py
 
 The helper prompts for the Airflow admin password, derives the metadata
 connection from platform-secrets, generates the Fernet/API/JWT keys, and
-applies them only to Kubernetes. Nothing sensitive is written to Git or to the
-working tree.
+applies them only to Kubernetes. For noninteractive automation, pass the
+password over standard input with --admin-password-stdin rather than writing it
+to a file. Nothing sensitive is written to Git or to the working tree.
 
 Argo CD then runs an idempotent pre-sync Job that creates the airflow database
 and the airflow-logs bucket. The UI is exposed through the existing Kind host
