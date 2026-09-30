@@ -31,16 +31,15 @@ jobs:
           kubectl kustomize infra/platform/base > /tmp/platform.yaml
           test -s /tmp/platform.yaml
 
-      - name: Parse PowerShell scripts
-        shell: pwsh
+      - name: Check portable entrypoints
         run: |
-          $files = Get-ChildItem scripts,health -Filter *.ps1 -Recurse
-          foreach ($file in $files) {
-            [scriptblock]::Create((Get-Content $file.FullName -Raw)) | Out-Null
-            Write-Host "Parsed $($file.FullName)"
-          }
+          legacy_files="$(find . -path './.git' -prune -o -type f \( -name '*.[Pp][Ss]1' -o -name '*.[Pp][Ss][Mm]1' \) -print -quit)"
+          if [[ -n "$legacy_files" ]]; then
+            printf 'Unexpected legacy script: %s\n' "$legacy_files" >&2
+            exit 1
+          fi
+          python3 -c 'from pathlib import Path; [compile(path.read_text(encoding="utf-8"), str(path), "exec") for root in ("scripts", "health") for path in Path(root).rglob("*.py")]'
 
       - name: Check shell script syntax
         run: |
-          find scripts -name '*.sh' -print0 | xargs -0 sed -i 's/\r$//'
-          find scripts -name '*.sh' -print0 | xargs -0 -n1 bash -n
+          find scripts health infra/platform/backup -type f -name '*.sh' -print0 | xargs -0 -r -n1 bash -n
