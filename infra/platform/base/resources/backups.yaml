@@ -87,7 +87,8 @@ spec:
           securityContext: { seccompProfile: { type: RuntimeDefault } }
           containers:
             - name: mc-mirror
-              image: quay.io/minio/mc:latest
+              image: mlops-minio:2025-09-07
+              imagePullPolicy: IfNotPresent
               env:
                 - name: MINIO_ROOT_USER
                   valueFrom: { secretKeyRef: { name: platform-secrets, key: MINIO_ROOT_USER } }
